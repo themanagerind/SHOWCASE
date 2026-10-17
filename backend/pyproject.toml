@@ -9,6 +9,7 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "alembic>=1.13",
     "geoalchemy2>=0.15",
+    "shapely>=2.0",
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
     "pyjwt>=2.9",

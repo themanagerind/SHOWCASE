@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import Forbidden, Unauthorized
 from app.core.security import decode_token
 from app.db.session import get_db
-from app.models import User
+from app.models import Retailer, User
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -32,5 +32,22 @@ def require_role(*roles: str) -> Callable[..., User]:
         if not set(roles) & set(user.roles):
             raise Forbidden("You do not have access to this resource")
         return user
+
+    return checker
+
+
+def get_current_retailer(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Retailer:
+    from app.services import retailer_service
+
+    return retailer_service.get_by_user(db, user)
+
+
+def require_plan(feature: str | None = None) -> Callable[..., Retailer]:
+    """403 unless the retailer has a TRIAL/ACTIVE/GRACE subscription whose plan includes `feature`."""
+    from app.services import plan_service
+
+    def checker(retailer: Retailer = Depends(get_current_retailer), db: Session = Depends(get_db)) -> Retailer:
+        plan_service.require_live_features(db, retailer.id, feature)
+        return retailer
 
     return checker

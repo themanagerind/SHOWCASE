@@ -67,6 +67,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - **Swap clarifications (approved):**
   - First-time listing is free: until the retailer's first swap, they may fill empty slots (up to the plan limit) with no lock. After that, any add/remove/replace is a swap and starts the 7-day lock.
   - Hiding/deactivating a product counts as a "remove" (blocked during lock). Setting stock to 0 is a stock edit (allowed).
+  - During the lock, product name and category cannot be changed (that would effectively replace the product); outside the lock they can be edited without counting as a swap.
   - Plan downgrade with too many active products (e.g. PRO 20 → BASIC 5): the retailer chooses which products stay active; until they do, only the most recently activated N products are shown publicly. This does not count as a swap.
 - One phone number = one retailer shop. The same user may also be a customer of other shops.
 - Seed plan prices (monthly, admin-editable): BASIC ₹199, PRO ₹399, PREMIUM ₹999.

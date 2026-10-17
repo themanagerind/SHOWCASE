@@ -48,3 +48,29 @@ def make_retailer(db, user: User | None = None, **kw) -> Retailer:
     db.add(r)
     db.flush()
     return r
+
+
+def make_subscription(db, retailer: Retailer, plan_code: str = "BASIC", status: str = "ACTIVE"):
+    from sqlalchemy import select
+
+    from app.models import Plan, Subscription
+    from app.models.enums import SubscriptionStatus
+
+    plan = db.scalar(select(Plan).where(Plan.code == plan_code))
+    sub = Subscription(retailer_id=retailer.id, plan_id=plan.id, status=SubscriptionStatus(status))
+    db.add(sub)
+    db.flush()
+    return sub
+
+
+def make_shop(db, plan_code: str | None = "BASIC", status: str = "ACTIVE", **kw) -> Retailer:
+    retailer = make_retailer(db, **kw)
+    if plan_code:
+        make_subscription(db, retailer, plan_code, status)
+    return retailer
+
+
+def product_data(n: int = 1, **kw) -> dict:
+    data = {"name": f"Product {n}", "price_paise": 10000 * n, "stock_qty": 5}
+    data.update(kw)
+    return data
