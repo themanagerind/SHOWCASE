@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     otp_send_limit_per_ip_hour: int = 30
 
     public_base_url: str = "http://localhost:3000"
+    cors_origins: list[str] = ["http://localhost:3000"]
 
     # THE-MANAGER wallet integration (SPEC 4.11) — flow not built yet
     the_manager_base_url: str = "http://localhost:8000"

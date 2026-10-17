@@ -28,6 +28,16 @@ services:
       db: {condition: service_healthy}
       redis: {condition: service_started}
 
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8001/api/v1
+    environment:
+      API_INTERNAL_URL: http://api:8000/api/v1
+    ports: ["3000:3000"]
+    depends_on: [api]
+
   worker:
     build: ./backend
     env_file: .env

@@ -39,6 +39,9 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Retailer sends their store link to any customer (WhatsApp share).
 - Customer signs up (phone OTP) through that link, and the retailer is automatically added to the customer's Favourites list. Store the source (`LINK` / `QR`).
 - Each retailer has their own customer list (`retailer_customers`).
+- Joining is idempotent: re-joining keeps the original source. Only shops with a TRIAL/ACTIVE/GRACE subscription can be joined; a retailer cannot join their own shop.
+- Removing a shop from favourites does NOT remove the customer from that retailer's customer list (marked "not favourite"); removal from the list happens only when the customer deletes their account (DPDP).
+- At signup the customer gives name, pincode, city, language and an optional, unticked-by-default consent "shops I join may contact me". The retailer sees the customer's full phone number ONLY with this consent; otherwise it is masked (e.g. `91XXXXXX89`). Consent can be withdrawn any time (its timestamp is cleared).
 
 ### 4.3 Product Listing and Weekly Slot-Swap Rule
 

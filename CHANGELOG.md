@@ -20,3 +20,10 @@
 - Migration `0002`: adds the discount column, drops `retailers.advance_*`, `bookings`, `customer_credits`, `credit_ledger`, `payment_confirmations` (bookings are recreated for points in step 6).
 - Customer with fewer points than the discount buys at full price (no partial use); admin retailer reward offers (threshold → % cash, then wallet reset) added to SPEC.
 - Wallet + THE-MANAGER code redemption moved to step 6; 72 tests passing.
+
+## Step 3 — Customer signup via retailer link/QR + favourites
+- API: `POST /retailers/{slug}/join` (idempotent, keeps first source LINK/QR), customer profile + DPDP consent (`/customers/me`), favourites add/list/remove, retailer's paginated customer list (`/retailers/me/customers`).
+- Rules: only live shops can be joined, no joining your own shop, unfavourite keeps the customer in the retailer's list, phone shown to retailer only with consent (masked otherwise), consent unticked by default and withdrawable.
+- Frontend started: Next.js 16 PWA (manifest, service worker, icons), Hindi + English, screens for shop page, OTP login, profile/consent, favourites; join flow login → profile → join → favourites.
+- E2E run in Chromium at 360px: full QR join flow, no horizontal scroll, Hindi rendering OK, service worker registered; screenshots in `docs/screenshots/step-3/`.
+- 14 new backend tests (86 total) + dev demo seed script; frontend typecheck and production build clean, `npm audit` 0 vulnerabilities.

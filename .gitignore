@@ -28,3 +28,6 @@ media/
 .DS_Store
 .idea/
 .vscode/
+
+# TypeScript build cache
+*.tsbuildinfo

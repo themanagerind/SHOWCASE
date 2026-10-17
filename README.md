@@ -6,7 +6,7 @@ Online storefront PWA for offline retailers in India. **Read [SPEC.md](SPEC.md) 
 
 ```bash
 cp .env.example .env          # fill in real values (openssl rand -hex 32 for JWT_SECRET)
-docker compose up --build     # API: http://localhost:8001/docs
+docker compose up --build     # App: http://localhost:3000  API docs: http://localhost:8001/docs
 ```
 
 ## Backend development
@@ -25,3 +25,13 @@ Tests need PostgreSQL with PostGIS and run against the real Alembic migration (d
 ```bash
 cd backend && .venv/bin/pytest
 ```
+
+## Frontend development
+
+```bash
+cd frontend && npm install
+npm run dev                   # http://localhost:3000 (expects the API on :8001)
+npm run typecheck && npm run build
+```
+
+Demo data for local testing: `cd backend && .venv/bin/python -m scripts.seed_demo`, then open http://localhost:3000/sharma-electronics?src=qr (dev OTPs are printed in the API log).

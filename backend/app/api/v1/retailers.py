@@ -35,7 +35,7 @@ def _share_link(retailer: Retailer, source: str) -> str:
     return f"{get_settings().public_base_url}/{retailer.slug}?src={source}"
 
 
-def _wa_url(number: str | None) -> str | None:
+def wa_url(number: str | None) -> str | None:
     if not number:
         return None
     digits = "".join(ch for ch in number if ch.isdigit())
@@ -51,7 +51,7 @@ def _public_out(retailer: Retailer) -> RetailerPublicOut:
         description=retailer.description, photos=retailer.photos, address_line=retailer.address_line,
         city=retailer.city, state=retailer.state, pincode=retailer.pincode, lat=lat, lng=lng,
         timings=retailer.timings, phone=retailer.phone, whatsapp_number=retailer.whatsapp_number,
-        whatsapp_url=_wa_url(retailer.whatsapp_number), payment_link=retailer.payment_link, upi_id=retailer.upi_id,
+        whatsapp_url=wa_url(retailer.whatsapp_number), payment_link=retailer.payment_link, upi_id=retailer.upi_id,
         rating_avg=float(retailer.rating_avg), rating_count=retailer.rating_count,
     )
 
