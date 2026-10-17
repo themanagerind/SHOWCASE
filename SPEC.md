@@ -83,8 +83,10 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - **Booking state machine**:
   - `RESERVED → PURCHASED`: customer buys the product at the shop. The booking's points become the purchase discount (not deducted again): customer pays price − discount at the shop, and the points are credited to the retailer's wallet.
   - `RESERVED → FORFEITED`: customer does not buy. The points disappear (credited to nobody), but the full record stays visible to customer, retailer and admin.
+  - `RESERVED → CANCELLED_BY_RETAILER`: retailer cannot honour the booking (e.g. out of stock). The points ARE returned to the customer's wallet (the customer did nothing wrong).
+- A reservation is valid for **24 hours** from creation. If not PURCHASED by then, a Celery job marks it FORFEITED (idempotent; the boundary is exact: at 24h 00m it is forfeited).
+- A reservation holds 1 unit of stock (per quantity booked); stock is released on FORFEITED or CANCELLED_BY_RETAILER, and consumed on PURCHASED. No stock → cannot reserve.
 - Retailer marks "Purchased" in the app; the platform never handles the shop payment.
-- **Open (owner to confirm):** how long a reservation stays valid before it is FORFEITED; whether a reservation holds stock; what happens to points if the RETAILER cancels (e.g. out of stock).
 
 ### 4.5 Wallets and Points Ledger
 
@@ -93,7 +95,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - 1 point = 1 paisa internally, displayed as ₹. Integers only.
 - Every movement (code redeemed, reservation deduction, purchase discount transfer, forfeit, admin reset) is an append-only ledger entry; a wallet's balance always equals the sum of its ledger entries and can never go negative.
 - **Retailer reward offers (Platform Owner / admin)**: admin can create an offer for a period (e.g. a week or month): "every retailer who collects ≥ X points in this period gets Y% of their total wallet balance as cash". At the end of the period the system lists qualifying retailers and their payout; the cash is paid by the platform owner outside the app and recorded (who, amount, date, reference). After the payout, the participating retailers' wallet balances are reset to 0 via ledger entries (history kept).
-- **Open (owner to confirm):** whether non-qualifying retailers are also reset; whether retailers must opt in to an offer.
+- Retailers must ACCEPT (opt in to) an offer to participate. Only opted-in retailers who qualify and receive the payout have their wallet reset to 0; everyone else keeps their balance.
 
 ### 4.6 Online Orders and Courier
 
@@ -164,7 +166,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 | TRIAL / ACTIVE / GRACE | Yes (within plan scope) | Yes (per plan rules) | Yes | Yes |
 | EXPIRED | **NO** | No | No | **YES** |
 
-- **Expired retailer exception** (PROPOSED, owner to confirm): public discovery hides the shop, BUT any customer who has an open RESERVED booking with that retailer still sees the shop in their "My Bookings/Favourites" with a limited view (address, contact, WhatsApp, booking). Expired retailers keep limited login access ONLY to complete existing bookings. No data is deleted; renewing restores everything.
+- **Expired retailer exception**: public discovery hides the shop, BUT any customer who has an open RESERVED booking with that retailer still sees the shop in their "My Bookings/Favourites" with a limited view (address, contact, WhatsApp, booking). Expired retailers keep limited login access ONLY to complete existing bookings. No data is deleted; renewing restores everything.
 
 ## 6. Database Tables (minimum)
 
@@ -230,9 +232,11 @@ Write automated tests (pytest) for all business rules in the service layer. Do n
 - Reservation deducts exactly the discount; points are never returned (no cancel refund)
 - PURCHASED booking: no second deduction; points credited to the retailer's wallet exactly once
 - FORFEITED booking: points go to nobody, record stays visible
+- Reservation forfeited at exactly 24h 00m, not at 23h 59m; forfeit job runs once only (idempotent); stock is released
+- Retailer cancellation returns the points to the customer exactly once; reservation without stock is rejected
 - Wallet balance always equals the sum of its ledger entries and never goes negative; ledger is immutable
 - Code redemption: same `request_id` reused on retry, a code is credited at most once, 404/409 credit nothing
-- Reward offer: only retailers with ≥ threshold points in the period qualify; payout = % of balance; their wallets reset to 0 via ledger
+- Reward offer: only opted-in retailers with ≥ threshold points in the period qualify; non-qualifiers keep their balance; payout = % of balance; their wallets reset to 0 via ledger
 
 **Subscription and plans**
 - Price resolution order: `price_override` → active `retailer_offer` → `plan.base_price`
