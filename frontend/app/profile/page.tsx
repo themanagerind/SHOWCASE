@@ -93,6 +93,7 @@ function ProfileForm() {
         </label>
         <button className="btn" disabled={busy}>{t("save")}</button>
         {msg && <div className={msg.ok ? "success" : "error"}>{msg.text}</div>}
+        <a className="btn secondary" href="/retailer">🏪 {t("r_ownShopCta")}</a>
         <button type="button" className="btn secondary" onClick={() => { clearTokens(); location.href = "/"; }}>
           {t("logout")}
         </button>

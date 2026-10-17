@@ -102,6 +102,12 @@ def mask_phone(phone: str) -> str:
     return f"{digits[:2]}{'X' * (len(digits) - 4)}{digits[-2:]}"
 
 
+def count_customers(db: Session, retailer: Retailer) -> int:
+    return db.scalar(
+        select(func.count()).select_from(RetailerCustomer).where(RetailerCustomer.retailer_id == retailer.id)
+    )
+
+
 @dataclass
 class CustomerRow:
     customer: Customer

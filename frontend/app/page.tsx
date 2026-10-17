@@ -13,6 +13,7 @@ export default function Home() {
       </div>
       <Link className="btn" href="/discover">{t("discover")}</Link>
       <Link className="btn secondary" href="/favourites">{t("favourites")}</Link>
+      <Link className="btn secondary" href="/retailer">🏪 {t("r_ownShopCta")}</Link>
     </main>
   );
 }

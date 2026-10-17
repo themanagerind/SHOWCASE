@@ -26,7 +26,7 @@ from app.schemas.retailer import (
     SwapIn,
     SwapOut,
 )
-from app.services import plan_service, product_service, retailer_service
+from app.services import customer_service, plan_service, product_service, retailer_service
 
 router = APIRouter(prefix="/retailers", tags=["retailers"])
 
@@ -66,6 +66,11 @@ def _owner_out(db: Session, retailer: Retailer) -> RetailerOwnerOut:
         plan_code=features.code if features else None, subscription_status=sub.status.value if sub else None,
         products_locked_until=retailer.products_locked_until if locked else None,
         can_change_products_now=features is not None and not locked,
+        swap_locks=features.weekly_swap if features else True,
+        first_listing_free=not retailer.first_swap_done,
+        active_products=product_service.active_count(db, retailer.id),
+        max_products=features.max_products if features else None,
+        customers_count=customer_service.count_customers(db, retailer),
         share_link=_share_link(retailer, "link"),
     )
 

@@ -102,6 +102,11 @@ class RetailerOwnerOut(RetailerPublicOut):
     subscription_status: str | None
     products_locked_until: datetime | None
     can_change_products_now: bool
+    swap_locks: bool  # false for plans without the weekly lock (PREMIUM)
+    first_listing_free: bool  # true until the first swap: filling empty slots does not lock (SPEC 4.3)
+    active_products: int
+    max_products: int | None  # None = unlimited (PREMIUM) or no live plan
+    customers_count: int
     share_link: str
 
 

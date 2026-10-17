@@ -41,3 +41,10 @@
 - Ranking: word match → contains → fuzzy, then distance ring (far PREMIUM shops after nearer ones), then rating, then plan.
 - Two-phase query (index-only id lookup, then ranking on that set) after profiling: ~9 ms per search on 50k products / 200 shops; very generic words (matching every product) ~0.5 s — candidate cap 2,000.
 - Frontend: "दुकानें | प्रोडक्ट्स" tabs on the discovery screen; 18 new tests (128 total); e2e screenshot `docs/screenshots/step-4/4-product-search-hi.png`.
+
+## Retailer screens (before step 5)
+- Retailer signup: create shop (name, auto shop-link, category, address, pincode/city, WhatsApp, UPI, payment link, GPS shop location).
+- Dashboard: plan + status, active products vs plan limit, customer count, lock status banner (first listing free / 7-day lock / locked until … / no lock on PREMIUM), "no plan" warning.
+- Products: add (rupees → paise, discount ≤ price checked), edit (name locked during the weekly lock), hide, multi-slot swap with lock confirmation; hidden products listed.
+- Share & QR (copy link, WhatsApp share, QR download) and customer list (phone only with consent). Header shows "मेरी दुकान" for retailers.
+- API: `/retailers/me` now also returns `swap_locks`, `first_listing_free`, `active_products`, `max_products`, `customers_count`. Browser e2e of the whole retailer journey at 360px; screenshots in `docs/screenshots/retailer/`.

@@ -42,6 +42,9 @@ def test_create_shop_adds_retailer_role_and_normalises_city(client, login, db):
     assert shop["subscription_status"] is None  # no free plan: nothing until a subscription exists
     me = client.get("/api/v1/retailers/me", headers=auth(token)).json()
     assert me["subscription_status"] == "ACTIVE" and me["plan_code"] == "BASIC"
+    assert (me["first_listing_free"], me["active_products"], me["max_products"], me["customers_count"]) == (
+        True, 0, 5, 0
+    )
     assert "retailer" in client.get("/api/v1/auth/me", headers=auth(token)).json()["roles"]
 
 
@@ -96,6 +99,7 @@ def test_product_crud_and_public_listing(client, login, db, frozen):
 
     me = client.get("/api/v1/retailers/me", headers=auth(token)).json()
     assert me["can_change_products_now"] is False and me["products_locked_until"] is not None
+    assert (me["first_listing_free"], me["active_products"], me["max_products"]) == (False, 4, 5)
 
     assert client.delete(f"/api/v1/retailers/me/products/{ids[2]}", headers=auth(token)).json()["error"] == "weekly_lock"
     r = client.patch(f"/api/v1/retailers/me/products/{ids[2]}", json={"price_paise": 5000, "stock_qty": 1},
