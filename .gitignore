@@ -31,3 +31,6 @@ media/
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# Local Redis dumps
+dump.rdb
