@@ -80,3 +80,10 @@ input[type="text"], input[type="tel"], select {
 .cap { text-transform: capitalize; }
 h1 { color: var(--navy); }
 .price { color: var(--navy); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { flex: none; border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.chip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+.dist { color: var(--green); font-weight: 600; font-size: 13px; }
+.heart { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 20px; cursor: pointer; color: var(--green); }
+.heart.on { background: var(--green-soft); border-color: var(--green); }
+.note { font-size: 13px; color: var(--muted); }

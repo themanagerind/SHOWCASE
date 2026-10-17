@@ -43,8 +43,34 @@ def main() -> None:
         for name, price, mrp, discount in PRODUCTS:
             db.add(Product(retailer_id=shop.id, name=name, price_paise=price, mrp_paise=mrp,
                            wallet_discount_paise=discount, stock_qty=5))
+        _extra_shops(db)
         db.commit()
-        print("seeded /sharma-electronics")
+        print("seeded /sharma-electronics + nearby demo shops")
+
+
+# (slug, name, category, plan, pincode, lat, lng, rating) around Rajwada, Indore
+EXTRA_SHOPS = [
+    ("gupta-kirana", "गुप्ता किराना स्टोर", "Grocery", "PRO", "452002", 22.7270, 75.8640, 4.6),
+    ("verma-fashion", "वर्मा फ़ैशन हब", "Clothing", "PREMIUM", "452010", 22.7450, 75.8800, 4.2),
+    ("jain-mobile", "जैन मोबाइल पॉइंट", "Electronics", "BASIC", "452001", 22.7180, 75.8600, 4.9),
+    ("mehta-sweets", "मेहता स्वीट्स", "Sweets", "BASIC", "452018", 22.7000, 75.8700, 4.8),  # other pincode: hidden
+]
+
+
+def _extra_shops(db) -> None:
+    for i, (slug, name, category, plan_code, pin, lat, lng, rating) in enumerate(EXTRA_SHOPS):
+        user = User(phone=f"+91900000010{i}", name=name)
+        db.add(user)
+        db.flush()
+        shop = Retailer(
+            user_id=user.id, slug=slug, shop_name=name, category=category, address_line="Indore", city="indore",
+            pincode=pin, location=to_point(lat, lng), rating_avg=rating, rating_count=20 + i,
+            whatsapp_number=f"+91900000010{i}",
+        )
+        db.add(shop)
+        db.flush()
+        plan = db.scalar(select(Plan).where(Plan.code == plan_code))
+        db.add(Subscription(retailer_id=shop.id, plan_id=plan.id, status=SubscriptionStatus.ACTIVE))
 
 
 if __name__ == "__main__":

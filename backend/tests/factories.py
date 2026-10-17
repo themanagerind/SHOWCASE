@@ -74,3 +74,11 @@ def product_data(n: int = 1, **kw) -> dict:
     data = {"name": f"Product {n}", "price_paise": 10000 * n, "wallet_discount_paise": 1000 * n, "stock_qty": 5}
     data.update(kw)
     return data
+
+
+def point_from(db, lat: float, lng: float, meters: float, bearing_deg: float = 0.0):
+    """Exact geodesic point `meters` away from (lat, lng) — used for radius boundary tests."""
+    from sqlalchemy import func, select
+
+    origin = func.ST_GeogFromText(f"SRID=4326;POINT({lng} {lat})")
+    return db.scalar(select(func.ST_Project(origin, meters, func.radians(bearing_deg))))

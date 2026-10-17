@@ -101,8 +101,29 @@ export type Profile = {
   pincode: string | null;
   city: string | null;
   contact_consent: boolean;
+  search_radius_km: number;
   profile_complete: boolean;
 };
+
+export const RADIUS_OPTIONS = [2, 5, 10, 25, 50] as const;
+
+export type DiscoveredShop = {
+  slug: string;
+  shop_name: string;
+  category: string;
+  city: string;
+  photo: string | null;
+  rating_avg: number;
+  rating_count: number;
+  distance_m: number | null;
+  whatsapp_url: string | null;
+  is_favourite: boolean;
+};
+
+export type Discovery = { radius_km: number; used_location: boolean; items: DiscoveredShop[] };
+
+export const distanceLabel = (m: number) =>
+  m < 50 ? "< 50 m" : m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
 
 export type Favourite = {
   slug: string;

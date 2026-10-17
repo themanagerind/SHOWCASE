@@ -2,7 +2,7 @@
   "name": "Showcase",
   "short_name": "Showcase",
   "description": "Your favourite local shops, online",
-  "start_url": "/favourites",
+  "start_url": "/discover",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0b2545",

@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,7 @@ class CustomerProfileOut(BaseModel):
     city: str | None
     contact_consent: bool
     consent_at: datetime | None
+    search_radius_km: int
     profile_complete: bool
 
 
@@ -27,6 +29,7 @@ class CustomerProfileUpdate(BaseModel):
     pincode: str | None = Field(default=None, pattern=PINCODE)
     city: str | None = Field(default=None, min_length=2, max_length=80)
     contact_consent: bool | None = None
+    search_radius_km: Literal[2, 5, 10, 25, 50] | None = None
 
 
 class JoinIn(BaseModel):

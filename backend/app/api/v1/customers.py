@@ -23,7 +23,7 @@ def _profile_out(user: User, db: Session) -> CustomerProfileOut:
     c = customer_service.get_customer(db, user)
     return CustomerProfileOut(
         id=c.id, phone=user.phone, name=user.name, preferred_language=user.preferred_language, pincode=c.pincode,
-        city=c.city, contact_consent=c.contact_consent, consent_at=c.consent_at,
+        city=c.city, contact_consent=c.contact_consent, consent_at=c.consent_at, search_radius_km=c.search_radius_km,
         profile_complete=customer_service.is_profile_complete(user, c),
     )
 

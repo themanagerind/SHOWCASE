@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { api, ApiError, isLoggedIn, type Profile } from "@/lib/api";
+import { api, ApiError, clearTokens, isLoggedIn, type Profile, RADIUS_OPTIONS } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { LANGS, type Lang } from "@/lib/messages";
 
@@ -10,7 +10,7 @@ function ProfileForm() {
   const { t, lang, setLang } = useI18n();
   const router = useRouter();
   const next = useSearchParams().get("next");
-  const [form, setForm] = useState({ name: "", pincode: "", city: "", preferred_language: "hi", contact_consent: false });
+  const [form, setForm] = useState({ name: "", pincode: "", city: "", preferred_language: "hi", contact_consent: false, search_radius_km: 5 });
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -25,6 +25,7 @@ function ProfileForm() {
         name: p.name ?? "", pincode: p.pincode ?? "", city: p.city ?? "",
         // New users keep the language they are already using on screen.
         preferred_language: p.profile_complete ? p.preferred_language : lang, contact_consent: p.contact_consent,
+        search_radius_km: p.search_radius_km,
       });
       setLoaded(true);
     });
@@ -75,6 +76,13 @@ function ProfileForm() {
             {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
         </div>
+        <div>
+          <label htmlFor="radius">{t("radius")}</label>
+          <select id="radius" value={form.search_radius_km}
+            onChange={(e) => setForm({ ...form, search_radius_km: Number(e.target.value) })}>
+            {RADIUS_OPTIONS.map((r) => <option key={r} value={r}>{r} {t("km")}</option>)}
+          </select>
+        </div>
         <label className="check">
           <input type="checkbox" checked={form.contact_consent} onChange={set("contact_consent")} />
           <span>
@@ -85,6 +93,9 @@ function ProfileForm() {
         </label>
         <button className="btn" disabled={busy}>{t("save")}</button>
         {msg && <div className={msg.ok ? "success" : "error"}>{msg.text}</div>}
+        <button type="button" className="btn secondary" onClick={() => { clearTokens(); location.href = "/"; }}>
+          {t("logout")}
+        </button>
       </form>
     </main>
   );

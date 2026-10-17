@@ -33,6 +33,8 @@ def update_profile(db: Session, user: User, customer: Customer, data: dict) -> N
         customer.city = retailer_service.normalize_city(data.pop("city"))
     if "pincode" in data:
         customer.pincode = data.pop("pincode")
+    if "search_radius_km" in data:
+        customer.search_radius_km = data.pop("search_radius_km")
     if "contact_consent" in data:
         consent = data.pop("contact_consent")
         if consent != customer.contact_consent:

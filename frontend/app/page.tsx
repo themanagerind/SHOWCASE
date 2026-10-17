@@ -11,7 +11,8 @@ export default function Home() {
         <h1>{t("appName")}</h1>
         <p className="muted">{t("tagline")}</p>
       </div>
-      <Link className="btn" href="/favourites">{t("favourites")}</Link>
+      <Link className="btn" href="/discover">{t("discover")}</Link>
+      <Link className="btn secondary" href="/favourites">{t("favourites")}</Link>
     </main>
   );
 }

@@ -27,3 +27,10 @@
 - Frontend started: Next.js 16 PWA (manifest, service worker, icons), Hindi + English, screens for shop page, OTP login, profile/consent, favourites; join flow login → profile → join → favourites.
 - E2E run in Chromium at 360px: full QR join flow, no horizontal scroll, Hindi rendering OK, service worker registered; screenshots in `docs/screenshots/step-3/`.
 - 14 new backend tests (86 total) + dev demo seed script; frontend typecheck and production build clean, `npm audit` 0 vulnerabilities.
+
+## Step 4 — Discovery with PostGIS and plan-based visibility
+- `GET /api/v1/discovery/shops`: live subscriptions only; PINCODE/CITY/INDIA scope from the plan; `ST_DWithin` radius filter + `ST_Distance` on the GiST-indexed geography column; works logged-out (GPS + optional pincode/city) and logged-in (profile pincode/city/radius always win).
+- Ranking (owner decision): radius split into 6 rings → ring, rating, plan priority, exact distance. No-GPS fallback: profile pincode/city, ordered by rating then plan.
+- Customer profile gets a saved search radius (2/5/10/25/50 km, default 5); category filter; favourite flag per result.
+- Frontend: "आस-पास की दुकानें" screen (GPS with fallback, radius chips, category filter, favourite heart, load more); radius in profile; logout moved to profile; home/PWA start on discovery.
+- 24 new tests (110 total) incl. exact radius boundary (4990 m in / 5010 m out), every scope, expired/no-plan hidden, ring ranking; browser e2e at 360px with and without GPS; screenshots in `docs/screenshots/step-4/`.

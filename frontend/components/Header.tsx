@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { clearTokens, isLoggedIn } from "@/lib/api";
+import { isLoggedIn } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
 export default function Header() {
@@ -17,11 +17,11 @@ export default function Header() {
     <header className="header">
       <Link href="/" className="brand">{t("appName")}</Link>
       <nav>
+        <Link href="/discover">{t("navDiscover")}</Link>
         {loggedIn ? (
           <>
-            <Link href="/favourites">{t("favourites").split(" ").slice(-2).join(" ")}</Link>
+            <Link href="/favourites">{t("navFavourites")}</Link>
             <Link href="/profile">{t("profile")}</Link>
-            <button className="lang-toggle" onClick={() => { clearTokens(); location.href = "/"; }}>{t("logout")}</button>
           </>
         ) : (
           <Link href="/login">{t("login")}</Link>

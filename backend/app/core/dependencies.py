@@ -25,6 +25,13 @@ def get_current_user(
     return user
 
 
+def get_optional_user(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer), db: Session = Depends(get_db)
+) -> User | None:
+    """For public endpoints that personalise when a valid token is present. A bad token is still a 401."""
+    return get_current_user(creds, db) if creds is not None else None
+
+
 def require_role(*roles: str) -> Callable[..., User]:
     """Roles are re-read from the database, so a revoked role takes effect before the token expires."""
 

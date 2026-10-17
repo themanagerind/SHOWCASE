@@ -117,7 +117,10 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Discovery query must combine: subscription status, plan `visibility_scope`, and customer's radius. Rules:
   - Status in (TRIAL, ACTIVE, GRACE) only
   - INDIA scope: visible anywhere (within radius filter if customer set one); CITY scope: same city as customer; PINCODE scope: same pincode as customer
-- Ranking: distance first, then rating; plan priority only as a tie-break.
+- Ranking: distance first, then rating; plan priority only as a tie-break. Distance is compared in **rings**: the customer's radius is split into 6 equal concentric rings (5 km → rings of ~833 m). Shops are ordered by ring, then rating (high first), then plan priority, then exact distance.
+- The customer's pincode and city come from their PROFILE (entered by the customer). GPS (browser location) is used only to measure distance and apply the radius. Radius options: 2, 5, 10, 25, 50 km (default 5), saved in the profile.
+- Without GPS: no radius/distance. PINCODE-scope shops in the customer's pincode and CITY/INDIA-scope shops in the customer's city are shown, ordered by rating then plan priority. Without GPS and without pincode/city, the customer is asked for location or to complete the profile.
+- Logged-out visitors can browse discovery with GPS; they see shops whose scope matches the pincode/city they pass (otherwise INDIA-scope only).
 
 ### 4.9 Retailer Analytics (plan-gated)
 
@@ -256,7 +259,8 @@ Write automated tests (pytest) for all business rules in the service layer. Do n
 - PINCODE-scope shop is not shown to a customer in a different pincode; CITY-scope not shown outside the city; INDIA-scope shown anywhere within the customer's radius
 - EXPIRED retailer is absent from public discovery, but IS shown (limited view) to a customer with an open booking with them
 - Expired retailer can complete existing bookings but cannot add products or take new bookings
-- Ranking is by distance, then rating; plan priority only as tie-break
+- Ranking is by distance ring (radius / 6), then rating; plan priority only as tie-break
+- Radius boundary is exact (just inside shown, just outside hidden); without GPS the fallback uses profile pincode/city and rating order
 
 **Security and data**
 - A customer cannot read another customer's bookings or wallet; a retailer cannot access another retailer's data
