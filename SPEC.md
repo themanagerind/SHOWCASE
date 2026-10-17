@@ -126,13 +126,15 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 
 ### 4.11 THE-MANAGER wallet redemption (external integration)
 
-- THE-MANAGER (sister society-management product) issues wallet redemption codes to its residents. Showcase verifies a code with one server-to-server call:
-  - `POST {THE_MANAGER_BASE_URL}/api/v1/wallet-redemptions/verify`, headers `X-Store-Api-Key: <shared secret>`, body `{"code": "ABCD1234", "request_id": "<id>"}`
-  - `request_id`: Showcase sends the SAME id on every retry of one redemption (its own redemption/order id) until it is sure a response arrived; THE-MANAGER then returns the original result instead of `409`.
-  - Success: `{"amount_paise": 15000, "used_at": "<UTC ISO timestamp>"}` (integer paise)
-  - Errors: `404` code not found, `409` code already used (by another request), `401` key wrong/missing, `503` key not configured on THE-MANAGER side
+- THE-MANAGER (sister society-management product): a resident transfers wallet points to the Platform Owner's Master Wallet there and receives an 8-character code. Showcase verifies the code with one server-to-server call:
+  - `POST {THE_MANAGER_BASE_URL}/api/v1/wallet-redemptions/verify`
+  - Header: `X-Store-Api-Key: <shared secret>` (only auth; no OAuth/JWT/session). Body (JSON, NOT headers): `{"code": "AB3DEFGH", "request_id": "showcase-redeem-<uuid>"}`
+  - `code`: send exactly as the customer typed it (THE-MANAGER normalises case/whitespace).
+  - `request_id` (string, max 100 chars, always sent): ONE id per redemption attempt, stored in Showcase before the call. On timeout / no response, retry with the SAME `request_id` → THE-MANAGER replays the original `200`. Never generate a new id for the same attempt. A different or missing `request_id` on a used code → `409`.
+  - Success `200`: `{"amount_paise": 15000, "used_at": "2026-10-17T16:43:31.530385+00:00"}` — `amount_paise` is an integer; never parse it as float.
+  - Errors: `401` key missing/wrong (config problem, not shown to customer as "invalid code"), `404` code doesn't exist → "invalid code", `409` already redeemed → no points credited, `503` integration not live on THE-MANAGER side.
 - No database access and no resident/society data is shared — only `amount_paise` and `used_at`.
-- Shared secret lives only in `.env` (`THE_MANAGER_API_KEY`), never in git.
+- Shared secret lives only in `.env` (`THE_MANAGER_API_KEY`, same value as THE-MANAGER's `ECOM_STORE_API_KEY`), never in git.
 - **Business rules (decided):**
   - The CUSTOMER enters the code in the Showcase customer app. The FULL redeemed amount is credited to the customer's Showcase wallet as points (1 point = 1 paisa internally, shown as ₹).
   - The RETAILER sets a wallet discount (fixed ₹ amount) on each product, together with its price. The discount must not exceed the price.
