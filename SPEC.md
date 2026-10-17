@@ -127,12 +127,18 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 ### 4.11 THE-MANAGER wallet redemption (external integration)
 
 - THE-MANAGER (sister society-management product) issues wallet redemption codes to its residents. Showcase verifies a code with one server-to-server call:
-  - `POST {THE_MANAGER_BASE_URL}/api/v1/wallet-redemptions/verify`, headers `X-Store-Api-Key: <shared secret>`, body `{"code": "ABCD1234"}`
-  - Success: `{"amount": 150.0, "used_at": "<UTC ISO timestamp>"}` (amount in rupees; Showcase converts to paise exactly)
-  - Errors: `404` code not found, `409` code already used, `401` key wrong/missing, `503` key not configured on THE-MANAGER side
-- No database access and no resident/society data is shared — only `amount` and `used_at`.
+  - `POST {THE_MANAGER_BASE_URL}/api/v1/wallet-redemptions/verify`, headers `X-Store-Api-Key: <shared secret>`, body `{"code": "ABCD1234", "request_id": "<id>"}`
+  - `request_id`: Showcase sends the SAME id on every retry of one redemption (its own redemption/order id) until it is sure a response arrived; THE-MANAGER then returns the original result instead of `409`.
+  - Success: `{"amount_paise": 15000, "used_at": "<UTC ISO timestamp>"}` (integer paise)
+  - Errors: `404` code not found, `409` code already used (by another request), `401` key wrong/missing, `503` key not configured on THE-MANAGER side
+- No database access and no resident/society data is shared — only `amount_paise` and `used_at`.
 - Shared secret lives only in `.env` (`THE_MANAGER_API_KEY`), never in git.
-- **Business flow is NOT yet decided** (where the code is used, who receives the money, settlement). Do not build until confirmed.
+- **Business rules (decided):**
+  - The CUSTOMER enters the code in the Showcase customer app.
+  - Allowed only on full-payment purchases (online order with full payment, or option "B": in-shop purchase). NOT allowed on bookings/reservations with partial advance.
+  - The discount is capped: the customer must still pay a minimum. Example: product ₹1000, wallet ₹1500 → customer pays at least ₹850.
+  - The RETAILER bears the discount. Showcase only records each redemption (who, which retailer, which purchase, amount, time); there is no money flow through the platform.
+- **Open (do not build until answered):** exact cap formula (15% of price, or fixed amount?), what happens to unused code value above the cap, how an in-shop purchase is created in the app, whether retailers opt in, and the build step.
 
 ## 5. Subscription System (Admin-controlled)
 
