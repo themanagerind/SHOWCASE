@@ -61,8 +61,7 @@ def test_slug_taken_and_reserved(client, login, db):
 
 def test_invalid_input_rejected(client, login):
     token = login()["access_token"]
-    for bad in ({"pincode": "45200"}, {"lat": 51.5}, {"upi_id": "not-a-upi"}, {"timings": {"mon": [["20:00", "10:00"]]}},
-                {"advance_type": "PERCENT", "advance_value": 150}):
+    for bad in ({"pincode": "45200"}, {"lat": 51.5}, {"upi_id": "not-a-upi"}, {"timings": {"mon": [["20:00", "10:00"]]}}):
         assert client.post("/api/v1/retailers", json={**SHOP, **bad}, headers=auth(token)).status_code == 422
 
 
@@ -99,12 +98,23 @@ def test_product_crud_and_public_listing(client, login, db, frozen):
     assert me["can_change_products_now"] is False and me["products_locked_until"] is not None
 
     assert client.delete(f"/api/v1/retailers/me/products/{ids[2]}", headers=auth(token)).json()["error"] == "weekly_lock"
-    r = client.patch(f"/api/v1/retailers/me/products/{ids[2]}", json={"price_paise": 999, "stock_qty": 1},
+    r = client.patch(f"/api/v1/retailers/me/products/{ids[2]}", json={"price_paise": 5000, "stock_qty": 1},
                      headers=auth(token))
-    assert r.status_code == 200 and r.json()["price_paise"] == 999
+    assert r.status_code == 200 and r.json()["price_paise"] == 5000
 
     public = client.get("/api/v1/retailers/sharma-electronics").json()["products"]
     assert len(public) == 4
+
+
+def test_wallet_discount_is_mandatory_and_within_price(client, login, db):
+    token, _ = create_shop(client, login, db=db)
+    base = {"name": "TV", "price_paise": 100000}
+    for bad in ({}, {"wallet_discount_paise": 0}, {"wallet_discount_paise": 100001}):
+        r = client.post("/api/v1/retailers/me/products", json={**base, **bad}, headers=auth(token))
+        assert r.status_code == 422, bad
+    r = client.post("/api/v1/retailers/me/products", json={**base, "wallet_discount_paise": 100000}, headers=auth(token))
+    assert r.status_code == 201 and r.json()["wallet_discount_paise"] == 100000
+    assert client.get("/api/v1/retailers/sharma-electronics").json()["products"][0]["wallet_discount_paise"] == 100000
 
 
 def test_unknown_edit_field_rejected(client, login, db):

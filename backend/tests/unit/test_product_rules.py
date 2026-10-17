@@ -121,9 +121,22 @@ def test_price_stock_photo_description_editable_during_lock(db, frozen):
     ps.swap(db, shop, owner(db, shop), [products[0].id], [product_data(3)])
     p = ps.edit_product(
         db, shop, products[1].id,
-        {"price_paise": 12345, "mrp_paise": 20000, "stock_qty": 0, "photos": ["a.jpg"], "description": "new"},
+        {"price_paise": 12345, "mrp_paise": 20000, "wallet_discount_paise": 500, "stock_qty": 0,
+         "photos": ["a.jpg"], "description": "new"},
     )
-    assert (p.price_paise, p.stock_qty, p.photos, p.description) == (12345, 0, ["a.jpg"], "new")
+    assert (p.price_paise, p.wallet_discount_paise, p.stock_qty, p.photos, p.description) == (
+        12345, 500, 0, ["a.jpg"], "new"
+    )
+
+
+def test_edit_cannot_push_discount_above_price(db, frozen):
+    shop = make_shop(db, "BASIC")
+    p = fill(db, shop, 1)[0]  # price 10000, discount 1000
+    for change in ({"price_paise": 999}, {"wallet_discount_paise": 10001}):
+        with pytest.raises(DomainError) as e:
+            ps.edit_product(db, shop, p.id, change)
+        assert e.value.code == "invalid_discount"
+    ps.edit_product(db, shop, p.id, {"price_paise": 1000})  # discount == price is allowed
 
 
 def test_name_and_category_locked_during_lock_but_free_otherwise(db, frozen):

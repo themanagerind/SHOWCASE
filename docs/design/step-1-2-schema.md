@@ -1,5 +1,7 @@
 # Step 1 + 2 — Proposed folder structure and database schema (FOR REVIEW)
 
+> **Note (2026-10-17):** bookings, customer_credits, credit_ledger and payment_confirmations below are SUPERSEDED by the wallet-points model (SPEC §4.4, §4.5, migration 0002). The new booking/wallet tables will be designed in step 6.
+
 Status: **approved** (answers recorded in SPEC.md §4.3). Frontend starts with step 3; steps 1–2 are backend only.
 
 Conventions used everywhere below:

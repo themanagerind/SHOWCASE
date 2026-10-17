@@ -62,7 +62,7 @@ def _owner_out(db: Session, retailer: Retailer) -> RetailerOwnerOut:
     locked = product_service.is_locked(retailer, features, clock.now()) if retailer.first_swap_done else False
     return RetailerOwnerOut(
         **_public_out(retailer).model_dump(),
-        id=retailer.id, advance_type=retailer.advance_type, advance_value=retailer.advance_value,
+        id=retailer.id,
         plan_code=features.code if features else None, subscription_status=sub.status.value if sub else None,
         products_locked_until=retailer.products_locked_until if locked else None,
         can_change_products_now=features is not None and not locked,

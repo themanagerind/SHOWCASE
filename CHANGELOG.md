@@ -13,3 +13,10 @@
 - Weekly lock: first-time listing is free; afterwards every add/remove/replace is a swap that locks for 7 days (PREMIUM never locks); price/MRP/stock/photos/description editable during lock; swap history recorded.
 - Downgrade handling: public page shows the most recent N products until the retailer picks which to keep (`/products/keep`, not a swap); `require_plan(feature)` dependency returns 403.
 - 36 new tests (70 total): every SPEC §11 plan-limit / weekly-swap boundary, RBAC between retailers, expired shops, concurrency.
+
+## Spec change — bookings move to wallet points (owner decision)
+- SPEC §4.4/§4.5 rewritten: no real-money advance, 8-hour refund or store credit; reservations deduct the product's wallet discount in points, never refunded; PURCHASED → points go to the retailer's wallet, FORFEITED → points vanish (record kept).
+- Every product now has a mandatory `wallet_discount_paise` (0 < discount ≤ price), editable even during the weekly lock; enforced in schema, service and a DB check constraint.
+- Migration `0002`: adds the discount column, drops `retailers.advance_*`, `bookings`, `customer_credits`, `credit_ledger`, `payment_confirmations` (bookings are recreated for points in step 6).
+- Customer with fewer points than the discount buys at full price (no partial use); admin retailer reward offers (threshold → % cash, then wallet reset) added to SPEC.
+- Wallet + THE-MANAGER code redemption moved to step 6; 72 tests passing.

@@ -19,7 +19,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Model, SoftDelete
-from app.models.enums import AdvanceType, JoinSource
+from app.models.enums import JoinSource
 from app.models.types import geo_point, pg_enum
 from app.models.user import User
 
@@ -48,10 +48,6 @@ class Retailer(Model, SoftDelete):
     whatsapp_number: Mapped[str | None] = mapped_column(String(15))
     payment_link: Mapped[str | None] = mapped_column(Text)
     upi_id: Mapped[str | None] = mapped_column(String(80))
-    advance_type: Mapped[AdvanceType] = mapped_column(
-        pg_enum(AdvanceType, "advance_type"), default=AdvanceType.PERCENT, server_default="PERCENT"
-    )
-    advance_value: Mapped[int] = mapped_column(Integer, default=20, server_default="20")
     products_locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     first_swap_done: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     rating_avg: Mapped[Decimal] = mapped_column(Numeric(3, 2), default=0, server_default="0")
@@ -76,6 +72,9 @@ class Product(Model, SoftDelete):
         Index("ix_products_retailer_id_is_active", "retailer_id", "is_active"),
         CheckConstraint("price_paise >= 0", name="price_non_negative"),
         CheckConstraint("stock_qty >= 0", name="stock_non_negative"),
+        CheckConstraint(
+            "wallet_discount_paise > 0 AND wallet_discount_paise <= price_paise", name="wallet_discount_range"
+        ),
     )
 
     retailer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("retailers.id"))
@@ -84,6 +83,8 @@ class Product(Model, SoftDelete):
     category: Mapped[str | None] = mapped_column(String(60))
     price_paise: Mapped[int] = mapped_column(BigInteger)
     mrp_paise: Mapped[int | None] = mapped_column(BigInteger)
+    # Mandatory wallet-points discount set by the retailer (SPEC 4.4); also the points needed to reserve.
+    wallet_discount_paise: Mapped[int] = mapped_column(BigInteger)
     stock_qty: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     photos: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")

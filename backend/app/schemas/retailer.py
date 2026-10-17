@@ -4,7 +4,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
-from app.models.enums import AdvanceType
 
 PHONE = r"^\+?[0-9]{10,13}$"
 PINCODE = r"^[1-9][0-9]{5}$"
@@ -24,15 +23,6 @@ def _check_timings(timings: dict | None) -> None:
                 raise ValueError(f"Invalid time range {r} for {day}")
 
 
-def _check_advance(advance_type: AdvanceType | None, advance_value: int | None) -> None:
-    if advance_type is None or advance_value is None:
-        return
-    if advance_type == AdvanceType.PERCENT and not 1 <= advance_value <= 100:
-        raise ValueError("Advance percent must be 1-100")
-    if advance_type == AdvanceType.FIXED and advance_value < 100:
-        raise ValueError("Fixed advance must be at least ₹1 (100 paise)")
-
-
 class RetailerBase(BaseModel):
     shop_name: str = Field(min_length=2, max_length=120)
     category: str = Field(min_length=2, max_length=60)
@@ -49,8 +39,6 @@ class RetailerBase(BaseModel):
     whatsapp_number: str | None = Field(default=None, pattern=PHONE)
     payment_link: HttpUrl | None = None
     upi_id: str | None = Field(default=None, pattern=UPI)
-    advance_type: AdvanceType = AdvanceType.PERCENT
-    advance_value: int = 20
 
 
 class RetailerCreate(RetailerBase):
@@ -59,7 +47,6 @@ class RetailerCreate(RetailerBase):
     @model_validator(mode="after")
     def _validate(self):
         _check_timings(self.timings)
-        _check_advance(self.advance_type, self.advance_value)
         return self
 
 
@@ -80,15 +67,10 @@ class RetailerUpdate(BaseModel):
     whatsapp_number: str | None = Field(default=None, pattern=PHONE)
     payment_link: HttpUrl | None = None
     upi_id: str | None = Field(default=None, pattern=UPI)
-    advance_type: AdvanceType | None = None
-    advance_value: int | None = None
 
     @model_validator(mode="after")
     def _validate(self):
         _check_timings(self.timings)
-        if (self.advance_type is None) != (self.advance_value is None):
-            raise ValueError("advance_type and advance_value must be updated together")
-        _check_advance(self.advance_type, self.advance_value)
         return self
 
 
@@ -116,8 +98,6 @@ class RetailerPublicOut(BaseModel):
 
 class RetailerOwnerOut(RetailerPublicOut):
     id: uuid.UUID
-    advance_type: AdvanceType
-    advance_value: int
     plan_code: str | None
     subscription_status: str | None
     products_locked_until: datetime | None
@@ -136,10 +116,17 @@ class ProductCreate(BaseModel):
     name: str = Field(min_length=2, max_length=160)
     description: str | None = Field(default=None, max_length=4000)
     category: str | None = Field(default=None, max_length=60)
-    price_paise: int = Field(ge=0)
+    price_paise: int = Field(gt=0)
     mrp_paise: int | None = Field(default=None, ge=0)
+    wallet_discount_paise: int = Field(gt=0, description="Mandatory wallet-points discount; also points needed to reserve")
     stock_qty: int = Field(default=0, ge=0)
     photos: list[str] = Field(default_factory=list, max_length=8)
+
+    @model_validator(mode="after")
+    def _discount_within_price(self):
+        if self.wallet_discount_paise > self.price_paise:
+            raise ValueError("Wallet discount cannot be more than the price")
+        return self
 
 
 class ProductUpdate(BaseModel):
@@ -148,8 +135,9 @@ class ProductUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=160)
     description: str | None = Field(default=None, max_length=4000)
     category: str | None = Field(default=None, max_length=60)
-    price_paise: int | None = Field(default=None, ge=0)
+    price_paise: int | None = Field(default=None, gt=0)
     mrp_paise: int | None = Field(default=None, ge=0)
+    wallet_discount_paise: int | None = Field(default=None, gt=0)
     stock_qty: int | None = Field(default=None, ge=0)
     photos: list[str] | None = Field(default=None, max_length=8)
 
@@ -163,6 +151,7 @@ class ProductOut(BaseModel):
     category: str | None
     price_paise: int
     mrp_paise: int | None
+    wallet_discount_paise: int
     stock_qty: int
     photos: list[str]
     is_active: bool

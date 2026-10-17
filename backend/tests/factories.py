@@ -71,6 +71,6 @@ def make_shop(db, plan_code: str | None = "BASIC", status: str = "ACTIVE", **kw)
 
 
 def product_data(n: int = 1, **kw) -> dict:
-    data = {"name": f"Product {n}", "price_paise": 10000 * n, "stock_qty": 5}
+    data = {"name": f"Product {n}", "price_paise": 10000 * n, "wallet_discount_paise": 1000 * n, "stock_qty": 5}
     data.update(kw)
     return data

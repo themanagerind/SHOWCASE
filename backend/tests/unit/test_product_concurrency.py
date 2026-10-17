@@ -14,7 +14,7 @@ def test_parallel_adds_cannot_exceed_limit(engine):
     with Session(engine) as s:
         shop = make_shop(s, "BASIC")
         user = s.get(User, shop.user_id)
-        for i in range(4):
+        for i in range(1, 5):
             ps.add_product(s, shop, user, product_data(i))
         s.commit()
         shop_id, user_id = shop.id, user.id

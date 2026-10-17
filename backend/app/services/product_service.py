@@ -3,7 +3,7 @@
 - Before the retailer's first swap, empty slots can be filled freely (no lock).
 - After that, any add / remove / replace is a swap: allowed only when not locked, and it locks the
   product set for 7 days (plans with weekly_swap=false, i.e. PREMIUM, never lock).
-- During the lock, price / MRP / stock / photos / description can still be edited.
+- During the lock, price / MRP / wallet discount / stock / photos / description can still be edited.
 - Hiding a product counts as a remove. Plan-downgrade clean-up ("keep") is not a swap.
 """
 import uuid
@@ -20,7 +20,7 @@ from app.services.plan_service import PlanFeatures
 
 SWAP_LOCK = timedelta(days=7)
 # Editable at any time, including during the weekly lock.
-ALWAYS_EDITABLE = {"price_paise", "mrp_paise", "stock_qty", "photos", "description"}
+ALWAYS_EDITABLE = {"price_paise", "mrp_paise", "wallet_discount_paise", "stock_qty", "photos", "description"}
 # Changing these would effectively replace the product, so they follow the lock.
 LOCKED_FIELDS = {"name", "category"}
 
@@ -159,6 +159,10 @@ def edit_product(db: Session, retailer: Retailer, product_id: uuid.UUID, data: d
     unknown = data.keys() - ALWAYS_EDITABLE - LOCKED_FIELDS
     if unknown:
         raise DomainError(f"Cannot edit fields: {', '.join(sorted(unknown))}", code="invalid_fields")
+    price = data.get("price_paise", product.price_paise)
+    discount = data.get("wallet_discount_paise", product.wallet_discount_paise)
+    if not 0 < discount <= price:
+        raise DomainError("Wallet discount must be more than 0 and not more than the price", code="invalid_discount")
     for key, value in data.items():
         setattr(product, key, value)
     db.commit()

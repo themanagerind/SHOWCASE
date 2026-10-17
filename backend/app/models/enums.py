@@ -12,10 +12,6 @@ class JoinSource(enum.StrEnum):
     DISCOVERY = "DISCOVERY"
 
 
-class AdvanceType(enum.StrEnum):
-    PERCENT = "PERCENT"
-    FIXED = "FIXED"
-
 
 class BillingPeriod(enum.StrEnum):
     MONTHLY = "MONTHLY"
@@ -46,33 +42,8 @@ class SubscriptionPaymentStatus(enum.StrEnum):
     REFUNDED = "REFUNDED"
 
 
-class BookingStatus(enum.StrEnum):
-    PENDING_PAYMENT = "PENDING_PAYMENT"
-    CONFIRMED = "CONFIRMED"
-    COLLECTED = "COLLECTED"
-    CANCELLED_REFUNDED = "CANCELLED_REFUNDED"
-    CREDIT_ISSUED = "CREDIT_ISSUED"
-    CREDIT_USED = "CREDIT_USED"
-    CREDIT_SETTLED = "CREDIT_SETTLED"
 
 
-class PaymentMethod(enum.StrEnum):
-    CUSTOMER_UTR = "CUSTOMER_UTR"
-    CUSTOMER_SCREENSHOT = "CUSTOMER_SCREENSHOT"
-    RETAILER_MARKED = "RETAILER_MARKED"
-    GATEWAY_WEBHOOK = "GATEWAY_WEBHOOK"
-
-
-class CreditStatus(enum.StrEnum):
-    ACTIVE = "ACTIVE"
-    USED = "USED"
-    SETTLED = "SETTLED"
-
-
-class LedgerEntryType(enum.StrEnum):
-    ISSUE = "ISSUE"
-    USE = "USE"
-    SETTLE = "SETTLE"
 
 
 class OrderStatus(enum.StrEnum):

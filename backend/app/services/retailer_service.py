@@ -12,7 +12,7 @@ from app.services import plan_service
 SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,58})[a-z0-9]$")
 RESERVED_SLUGS = {
     "me", "api", "admin", "app", "login", "logout", "signup", "auth", "settings", "shops", "shop", "retailers",
-    "discover", "search", "credits", "bookings", "orders", "help", "about", "terms", "privacy", "static", "_next",
+    "discover", "search", "credits", "wallet", "bookings", "orders", "help", "about", "terms", "privacy", "static", "_next",
 }
 
 
