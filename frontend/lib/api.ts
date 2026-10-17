@@ -120,6 +120,22 @@ export type DiscoveredShop = {
   is_favourite: boolean;
 };
 
+export type FoundProduct = {
+  id: string;
+  name: string;
+  photo: string | null;
+  price_paise: number;
+  mrp_paise: number | null;
+  wallet_discount_paise: number;
+  in_stock: boolean;
+  shop_slug: string;
+  shop_name: string;
+  shop_city: string;
+  distance_m: number | null;
+};
+
+export type ProductSearch = { radius_km: number; used_location: boolean; items: FoundProduct[] };
+
 export type Discovery = { radius_km: number; used_location: boolean; items: DiscoveredShop[] };
 
 export const distanceLabel = (m: number) =>

@@ -48,3 +48,28 @@ def test_radius_saved_in_profile(client, login):
 
 def test_bad_token_is_401_not_anonymous(client):
     assert client.get(URL, params=GPS, headers=auth("garbage")).status_code == 401
+
+
+def test_product_search_api(client, login, db):
+    from sqlalchemy import select
+
+    from app.models import Plan, Retailer, Subscription
+
+    token, _ = __import__("tests.api.test_retailer_api", fromlist=["create_shop"]).create_shop(
+        client, login, "9876543210", plan="PREMIUM", db=db
+    )
+    client.post("/api/v1/retailers/me/products",
+                json={"name": "Bajaj Mixer Grinder", "price_paise": 349900, "wallet_discount_paise": 20000, "stock_qty": 0},
+                headers=auth(token))
+    r = client.get("/api/v1/discovery/products", params={"q": "mixar", **GPS})
+    assert r.status_code == 200
+    item = r.json()["items"][0]
+    assert item["name"] == "Bajaj Mixer Grinder" and item["shop_slug"] == "sharma-electronics"
+    assert item["in_stock"] is False and item["wallet_discount_paise"] == 20000 and item["distance_m"] == 0
+    assert client.get("/api/v1/discovery/products", params={"q": "m"}).status_code == 422
+    # Downgrade to BASIC: no longer in product search
+    shop = db.scalar(select(Retailer).where(Retailer.slug == "sharma-electronics"))
+    db.scalar(select(Subscription).where(Subscription.retailer_id == shop.id)).plan_id = db.scalar(
+        select(Plan.id).where(Plan.code == "BASIC"))
+    db.flush()
+    assert client.get("/api/v1/discovery/products", params={"q": "mixer", **GPS}).json()["items"] == []

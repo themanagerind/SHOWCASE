@@ -2,7 +2,7 @@
 
 Usage: .venv/bin/python -m scripts.seed_demo
 """
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.config import get_settings
 from app.db.session import SessionLocal
@@ -42,7 +42,7 @@ def main() -> None:
         db.add(Subscription(retailer_id=shop.id, plan_id=plan.id, status=SubscriptionStatus.ACTIVE))
         for name, price, mrp, discount in PRODUCTS:
             db.add(Product(retailer_id=shop.id, name=name, price_paise=price, mrp_paise=mrp,
-                           wallet_discount_paise=discount, stock_qty=5))
+                           wallet_discount_paise=discount, stock_qty=5, activated_at=func.now()))
         _extra_shops(db)
         db.commit()
         print("seeded /sharma-electronics + nearby demo shops")
@@ -54,7 +54,16 @@ EXTRA_SHOPS = [
     ("verma-fashion", "वर्मा फ़ैशन हब", "Clothing", "PREMIUM", "452010", 22.7450, 75.8800, 4.2),
     ("jain-mobile", "जैन मोबाइल पॉइंट", "Electronics", "BASIC", "452001", 22.7180, 75.8600, 4.9),
     ("mehta-sweets", "मेहता स्वीट्स", "Sweets", "BASIC", "452018", 22.7000, 75.8700, 4.8),  # other pincode: hidden
+    ("delhi-appliances", "दिल्ली अप्लायंसेज़", "Electronics", "PREMIUM", "110006", 28.6562, 77.2410, 4.7),  # ~700 km
 ]
+
+# slug -> [(name, price, mrp, discount)] ; BASIC shops' products never appear in product search
+EXTRA_PRODUCTS = {
+    "gupta-kirana": [("Prestige Mixer Grinder 500W", 289900, 349900, 15000), ("Tata Salt 1kg", 2800, 3000, 200)],
+    "verma-fashion": [("Cotton Kurta (Men)", 89900, 129900, 5000)],
+    "jain-mobile": [("Mixer Jar Set", 59900, 79900, 3000)],
+    "delhi-appliances": [("Philips Mixer Grinder 750W", 459900, 599900, 25000), ("Usha Table Fan", 249900, 299900, 10000)],
+}
 
 
 def _extra_shops(db) -> None:
@@ -63,7 +72,9 @@ def _extra_shops(db) -> None:
         db.add(user)
         db.flush()
         shop = Retailer(
-            user_id=user.id, slug=slug, shop_name=name, category=category, address_line="Indore", city="indore",
+            user_id=user.id, slug=slug, shop_name=name, category=category,
+            address_line="Chandni Chowk" if pin.startswith("110") else "Indore",
+            city="delhi" if pin.startswith("110") else "indore",
             pincode=pin, location=to_point(lat, lng), rating_avg=rating, rating_count=20 + i,
             whatsapp_number=f"+91900000010{i}",
         )
@@ -71,6 +82,9 @@ def _extra_shops(db) -> None:
         db.flush()
         plan = db.scalar(select(Plan).where(Plan.code == plan_code))
         db.add(Subscription(retailer_id=shop.id, plan_id=plan.id, status=SubscriptionStatus.ACTIVE))
+        for pname, price, mrp, discount in EXTRA_PRODUCTS.get(slug, []):
+            db.add(Product(retailer_id=shop.id, name=pname, price_paise=price, mrp_paise=mrp,
+                           wallet_discount_paise=discount, stock_qty=4, activated_at=func.now()))
 
 
 if __name__ == "__main__":

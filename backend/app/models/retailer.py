@@ -14,6 +14,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -70,6 +71,17 @@ class Product(Model, SoftDelete):
     __tablename__ = "products"
     __table_args__ = (
         Index("ix_products_retailer_id_is_active", "retailer_id", "is_active"),
+        Index(
+            "ix_products_name_trgm",
+            text("lower(name) gin_trgm_ops"),
+            postgresql_using="gin",
+            postgresql_where=text("is_active AND deleted_at IS NULL"),
+        ),
+        Index(
+            "ix_products_category_lower",
+            text("lower(category)"),
+            postgresql_where=text("is_active AND deleted_at IS NULL"),
+        ),
         CheckConstraint("price_paise >= 0", name="price_non_negative"),
         CheckConstraint("stock_qty >= 0", name="stock_non_negative"),
         CheckConstraint(

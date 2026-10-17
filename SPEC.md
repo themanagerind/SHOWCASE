@@ -122,6 +122,16 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Without GPS: no radius/distance. PINCODE-scope shops in the customer's pincode and CITY/INDIA-scope shops in the customer's city are shown, ordered by rating then plan priority. Without GPS and without pincode/city, the customer is asked for location or to complete the profile.
 - Logged-out visitors can browse discovery with GPS; they see shops whose scope matches the pincode/city they pass (otherwise INDIA-scope only).
 
+### 4.8a Product Search (owner decision 2026-10-17)
+
+- Customers (logged in or not) can search PRODUCTS by name/category across shops, in Hindi or English, tolerant to small spelling mistakes (`pg_trgm`).
+- Who appears in product search:
+  - **PREMIUM** retailers' products: **all India**, no radius limit — the main benefit of PREMIUM.
+  - **PRO** retailers' products: only in the customer's city AND within the customer's radius (without GPS: customer's city).
+  - **BASIC** retailers' products: NOT in product search (they remain visible on the shop page and shop discovery).
+  - Only live subscriptions (TRIAL/ACTIVE/GRACE), active non-deleted products, and after a downgrade only the products the public shop page shows.
+- Ranking: text match first (name starts with the query → name contains it → spelling-tolerant match), then distance ring (radius / 6; shops beyond the radius come after, nearest first), then shop rating, then plan priority. Without GPS: text match, then the customer's own city first, then rating, then plan.
+
 ### 4.9 Retailer Analytics (plan-gated)
 
 - Event tracking table `shop_events (id, retailer_id, customer_id nullable, anon_id, event_type[shop_view, product_view, favourite_add, whatsapp_click, call_click, booking_start, booking_confirmed], meta JSONB, lat, lng, created_at)`.
@@ -261,6 +271,11 @@ Write automated tests (pytest) for all business rules in the service layer. Do n
 - Expired retailer can complete existing bookings but cannot add products or take new bookings
 - Ranking is by distance ring (radius / 6), then rating; plan priority only as tie-break
 - Radius boundary is exact (just inside shown, just outside hidden); without GPS the fallback uses profile pincode/city and rating order
+
+**Product search**
+- PREMIUM product found from another city and beyond the radius; PRO product only in the same city and within radius; BASIC product never in product search
+- Expired retailer's products absent; hidden/deleted products absent; downgrade limit respected
+- Spelling-tolerant match works; ranking is text match, then distance ring, then rating, then plan
 
 **Security and data**
 - A customer cannot read another customer's bookings or wallet; a retailer cannot access another retailer's data

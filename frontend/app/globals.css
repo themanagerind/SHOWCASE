@@ -87,3 +87,10 @@ h1 { color: var(--navy); }
 .heart { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 20px; cursor: pointer; color: var(--green); }
 .heart.on { background: var(--green-soft); border-color: var(--green); }
 .note { font-size: 13px; color: var(--muted); }
+.tabs { display: flex; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+.tabs button { flex: 1; border: 0; background: transparent; border-radius: 999px; padding: 10px; font: inherit; font-weight: 600; color: var(--navy); cursor: pointer; }
+.tabs button.on { background: var(--navy); color: #fff; }
+input[type="search"] { width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; }
+.plink { text-decoration: none; color: inherit; align-items: flex-start; }
+.pname { font-weight: 600; }
+.badge.out { background: #fdecea; color: var(--danger); margin-left: 6px; }

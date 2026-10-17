@@ -34,3 +34,10 @@
 - Customer profile gets a saved search radius (2/5/10/25/50 km, default 5); category filter; favourite flag per result.
 - Frontend: "आस-पास की दुकानें" screen (GPS with fallback, radius chips, category filter, favourite heart, load more); radius in profile; logout moved to profile; home/PWA start on discovery.
 - 24 new tests (110 total) incl. exact radius boundary (4990 m in / 5010 m out), every scope, expired/no-plan hidden, ring ranking; browser e2e at 360px with and without GPS; screenshots in `docs/screenshots/step-4/`.
+
+## Step 4b — Product search (PREMIUM all India, PRO in city)
+- `GET /api/v1/discovery/products?q=`: PREMIUM products from all over India (no radius), PRO products only in the customer's city and radius, BASIC never (owner decision; SPEC §4.8a).
+- Spelling-tolerant Hindi/English search with `pg_trgm` (migration `0003`: trigram index on product name + category index); downgrade limit and live-subscription rules respected.
+- Ranking: word match → contains → fuzzy, then distance ring (far PREMIUM shops after nearer ones), then rating, then plan.
+- Two-phase query (index-only id lookup, then ranking on that set) after profiling: ~9 ms per search on 50k products / 200 shops; very generic words (matching every product) ~0.5 s — candidate cap 2,000.
+- Frontend: "दुकानें | प्रोडक्ट्स" tabs on the discovery screen; 18 new tests (128 total); e2e screenshot `docs/screenshots/step-4/4-product-search-hi.png`.
