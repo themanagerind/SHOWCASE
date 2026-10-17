@@ -134,11 +134,12 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - No database access and no resident/society data is shared — only `amount_paise` and `used_at`.
 - Shared secret lives only in `.env` (`THE_MANAGER_API_KEY`), never in git.
 - **Business rules (decided):**
-  - The CUSTOMER enters the code in the Showcase customer app.
-  - Allowed only on full-payment purchases (online order with full payment, or option "B": in-shop purchase). NOT allowed on bookings/reservations with partial advance.
-  - The discount is capped: the customer must still pay a minimum. Example: product ₹1000, wallet ₹1500 → customer pays at least ₹850.
-  - The RETAILER bears the discount. Showcase only records each redemption (who, which retailer, which purchase, amount, time); there is no money flow through the platform.
-- **Open (do not build until answered):** exact cap formula (15% of price, or fixed amount?), what happens to unused code value above the cap, how an in-shop purchase is created in the app, whether retailers opt in, and the build step.
+  - The CUSTOMER enters the code in the Showcase customer app. The FULL redeemed amount is credited to the customer's Showcase wallet as points (1 point = 1 paisa internally, shown as ₹).
+  - The RETAILER sets a wallet discount (fixed ₹ amount) on each product, together with its price. The discount must not exceed the price.
+  - On a full-payment purchase (online order, or in-shop purchase), the product's discount is deducted from the customer's wallet and credited to the retailer's Showcase wallet; the customer pays price − discount. The rest of the customer's points stay in their wallet.
+  - The discount is the retailer's cost. Showcase records every wallet movement in an immutable ledger; no real money moves through the platform.
+  - Wallet integration is built together with step 9 (orders).
+- **Open (do not build until answered):** whether bookings/reservations change to points-only (see question to owner — conflicts with §4.4), what retailer-wallet points can be used for, and what happens when the customer has fewer points than the discount.
 
 ## 5. Subscription System (Admin-controlled)
 
