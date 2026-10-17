@@ -64,6 +64,13 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 
 (`max_products: null` = unlimited; `visibility_scope`: PINCODE | CITY | INDIA)
 
+- **Swap clarifications (approved):**
+  - First-time listing is free: until the retailer's first swap, they may fill empty slots (up to the plan limit) with no lock. After that, any add/remove/replace is a swap and starts the 7-day lock.
+  - Hiding/deactivating a product counts as a "remove" (blocked during lock). Setting stock to 0 is a stock edit (allowed).
+  - Plan downgrade with too many active products (e.g. PRO 20 → BASIC 5): the retailer chooses which products stay active; until they do, only the most recently activated N products are shown publicly. This does not count as a swap.
+- One phone number = one retailer shop. The same user may also be a customer of other shops.
+- Seed plan prices (monthly, admin-editable): BASIC ₹199, PRO ₹399, PREMIUM ₹999.
+
 ### 4.4 Booking with Partial Payment (core rule)
 
 - Customer pays a partial advance (retailer-set % or fixed amount) through the retailer's payment link/UPI, and pays the remainder at the shop.
@@ -116,6 +123,16 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Stage 2 (ML, once enough data): XGBoost/LogisticRegression predicting booking probability per (customer, retailer). Design `ml/` module with training script, scoring service, and a `leads` table (`retailer_id, customer_id, score, reason, status`).
 - Only generate/share leads for customers who gave consent at signup ("retailer may contact me"). Comply with India's DPDP Act 2023 (consent, data deletion, minimal data).
 
+### 4.11 THE-MANAGER wallet redemption (external integration)
+
+- THE-MANAGER (sister society-management product) issues wallet redemption codes to its residents. Showcase verifies a code with one server-to-server call:
+  - `POST {THE_MANAGER_BASE_URL}/api/v1/wallet-redemptions/verify`, headers `X-Store-Api-Key: <shared secret>`, body `{"code": "ABCD1234"}`
+  - Success: `{"amount": 150.0, "used_at": "<UTC ISO timestamp>"}` (amount in rupees; Showcase converts to paise exactly)
+  - Errors: `404` code not found, `409` code already used, `401` key wrong/missing, `503` key not configured on THE-MANAGER side
+- No database access and no resident/society data is shared — only `amount` and `used_at`.
+- Shared secret lives only in `.env` (`THE_MANAGER_API_KEY`), never in git.
+- **Business flow is NOT yet decided** (where the code is used, who receives the money, settlement). Do not build until confirmed.
+
 ## 5. Subscription System (Admin-controlled)
 
 - Plans: BASIC, PRO, PREMIUM. No free plan. Prices, features and limits are all editable by admin.
@@ -144,6 +161,8 @@ users, retailers, customers, retailer_customers (favourites/source), products, p
 Use UUID primary keys, created_at/updated_at on all tables, soft deletes where needed, proper indexes (GiST on location, composite on retailer_id+status, etc.), and Alembic migrations.
 
 ## 7. API Structure (FastAPI)
+
+All endpoints are served under the `/api/v1` prefix.
 
 ```
 app/
@@ -234,7 +253,7 @@ Write automated tests (pytest) for all business rules in the service layer. Do n
 
 - Private repo. Add `.gitignore` in the very first commit (`.env`, `__pycache__/`, `venv/`, `node_modules/`, `.next/`, uploads).
 - Never commit secrets (Razorpay keys, JWT secret, DB password, courier/S3 keys). Use `.env` and commit only `.env.example`.
-- One build step = one branch = one PR (e.g., `step-2-products-and-weekly-swap`). Use clear commit messages (`feat: ...`, `fix: ...`).
+- One build step = one branch = one PR (e.g., `step-2-products-and-weekly-swap`). Exception: when the Claude Code session is restricted to one branch, each step goes there as separate commits. Use clear commit messages (`feat: ...`, `fix: ...`).
 - After each step, append a 5-line summary to `CHANGELOG.md`.
 
 ## 13. Working Rules for Claude Code (read every session)

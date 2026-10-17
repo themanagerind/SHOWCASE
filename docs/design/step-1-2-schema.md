@@ -1,6 +1,6 @@
 # Step 1 + 2 — Proposed folder structure and database schema (FOR REVIEW)
 
-Status: **awaiting approval** (SPEC.md §10, §13). No application code has been written yet.
+Status: **approved** (answers recorded in SPEC.md §4.3). Frontend starts with step 3; steps 1–2 are backend only.
 
 Conventions used everywhere below:
 
