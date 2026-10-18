@@ -1,6 +1,6 @@
 # THE-MANAGER → Showcase: Resident Signup Prefill — proposed contract
 
-Status: **DESIGN, not built.** Showcase-side proposal for review by the owner and the THE-MANAGER team.
+Status: **design APPROVED by the owner (2026-10-18), not built yet.** Showcase builds its side after step 5; THE-MANAGER can build its side from this document now.
 Agreed principles (from THE-MANAGER): no SSO, OTP on Showcase is mandatory, prefill is only to save typing,
 token verified server-to-server with the shared secret, short-lived, single-use, editable before saving.
 
@@ -78,13 +78,13 @@ The prefill never blocks signup. Any error simply falls back to the normal form.
    The contact-consent box stays unticked. The resident saves.
 6. The customer is tagged `signup_source = THE_MANAGER` (useful later for wallet redemption and reporting).
 
-Showcase needs new optional profile fields: `email`, `society_name`, `address_line`, `flat_number`, `floor`, `state`.
+Showcase needs new optional profile fields: `society_name`, `address_line`, `flat_number`, `floor`, `state` (no email).
 
-## 4. Open questions for the owner
+## 4. Owner decisions (2026-10-18)
 
-1. Approve the **opaque token + server-side fetch** design (instead of putting data in a signed token)?
-2. Approve **revealing name/address only after OTP for the same mobile**?
-3. Token validity: **5 minutes** OK?
-4. Should Showcase **store the address/flat/email** in the customer profile (useful for courier delivery in
-   step 9), or use them only to fill the form once? DPDP says to keep minimal data.
-5. Landing URL `/welcome?prefill=` OK? (`/signup` is fine too.)
+1. Opaque token + server-side fetch: **approved**.
+2. Name/address/flat revealed only after OTP for the same mobile: **approved**.
+3. Token validity: **5 minutes**, single use.
+4. Address, society and flat are saved to the Showcase profile **only if the resident saves the prefilled form**.
+   **Email is not stored** by Showcase (no current use; DPDP minimal data). THE-MANAGER may still send it; Showcase ignores it.
+5. Landing URL: **`/welcome?prefill=<token>`**.
