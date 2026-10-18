@@ -33,7 +33,7 @@ def test_views_deduped_own_visits_ignored_server_events_recorded(client, login, 
     shop_t = login("9876543210")["access_token"]  # token expired with the clock tick
     assert ev(client, "shop_view", token=shop_t).json()["counted"] is False  # retailer's own visit
     assert ev(client, "whatsapp_click").json()["counted"] is True
-    assert ev(client, "whatsapp_click").json()["counted"] is True  # clicks are not deduped
+    assert ev(client, "whatsapp_click").json()["counted"] is False  # clicks too: once per 30 min per visitor
     assert ev(client, "product_view", product_id=pid).json()["counted"] is True
     assert ev(client, "product_view", product_id=str(uuid.uuid4())).status_code == 400
     assert ev(client, "booking_confirmed").status_code == 422  # server-only events can't be sent
@@ -47,7 +47,7 @@ def test_views_deduped_own_visits_ignored_server_events_recorded(client, login, 
     client.post(f"/api/v1/bookings/{b['id']}/purchased", headers=auth(cust))
     types = dict(db.execute(select(ShopEvent.event_type, func.count()).group_by(ShopEvent.event_type)).all())
     assert {k.value: v for k, v in types.items()} == {
-        "shop_view": 3, "whatsapp_click": 2, "product_view": 1, "favourite_add": 1, "booking_start": 1,
+        "shop_view": 3, "whatsapp_click": 1, "product_view": 1, "favourite_add": 1, "booking_start": 1,
         "booking_confirmed": 1}
     assert db.scalar(select(func.count()).where(ShopEvent.lat.is_not(None))) == 0  # no location stored
 
@@ -92,3 +92,10 @@ def test_purge_keeps_13_months(db, frozen):
     assert analytics_service.purge_old(db, now) == 1  # only the 400-day-old one (> 13 months)
     assert db.scalar(select(func.count()).select_from(ShopEvent)) == 2
 
+
+
+def test_fresh_anon_ids_cannot_flood_events_from_one_ip(client, login, db, frozen):
+    """Security audit: rotating anon_id per request is capped per IP."""
+    setup(client, login, db)
+    codes = [ev(client, "whatsapp_click", anon=f"flood-{i:06d}").status_code for i in range(601)]
+    assert codes[:600] == [200] * 600 and codes[600] == 429

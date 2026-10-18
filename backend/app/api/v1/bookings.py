@@ -3,13 +3,16 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
+from redis import Redis
 from sqlalchemy.orm import Session
 
+from app.core import rate_limit
 from app.core.dependencies import get_current_retailer, get_current_user
+from app.core.redis import get_redis
 from app.db.session import get_db
 from app.models import Booking, Customer, Retailer, ShopDiscountRequest, User
 from app.models.enums import BookingStatus
-from app.services import booking_service, customer_service
+from app.services import booking_service, customer_service, review_service
 
 router = APIRouter(tags=["bookings"])
 
@@ -67,8 +70,11 @@ def _booking_out(db: Session, b: Booking, for_retailer: bool) -> BookingOut:
                      created_at=b.created_at, expires_at=b.expires_at, purchased_at=b.purchased_at,
                      forfeited_at=b.forfeited_at, cancelled_at=b.cancelled_at, cancel_reason=b.cancel_reason)
     if for_retailer:
-        cu = db.get(User, db.get(Customer, b.customer_id).user_id)
-        out.customer_name, out.customer_phone = cu.name, cu.phone
+        c = db.get(Customer, b.customer_id)
+        cu = db.get(User, c.user_id)
+        # Same rule as the customer list (SPEC 4.2): full number only with the customer's contact consent.
+        out.customer_name = cu.name
+        out.customer_phone = cu.phone if c.contact_consent else customer_service.mask_phone(cu.phone)
     else:
         r = db.get(Retailer, b.retailer_id)
         out.shop_name, out.shop_slug = r.shop_name, r.slug
@@ -79,9 +85,10 @@ def _discount_out(db: Session, r: ShopDiscountRequest, for_retailer: bool) -> Di
     out = DiscountOut(id=str(r.id), amount_paise=r.amount_paise, note=r.note, status=r.status.value,
                       created_at=r.created_at, expires_at=r.expires_at, responded_at=r.responded_at)
     if for_retailer:
-        # Only who and how much — never the customer's wallet balance (SPEC 4.4a).
+        # Only who and how much — never the customer's wallet balance (SPEC 4.4a). The retailer typed the number;
+        # the name is shortened ("Ravi V.") so a number cannot be turned into someone's full name.
         cu = db.get(User, db.get(Customer, r.customer_id).user_id)
-        out.customer_name, out.customer_phone = cu.name, cu.phone
+        out.customer_name, out.customer_phone = review_service.public_name(cu.name), cu.phone
     else:
         out.shop_name = db.get(Retailer, r.retailer_id).shop_name
     return out
@@ -174,7 +181,9 @@ def retailer_cancel(booking_id: uuid.UUID, body: CancelIn, retailer: Retailer = 
 
 @router.post("/retailers/me/shop-discounts", response_model=DiscountOut, status_code=201)
 def retailer_create_discount(body: DiscountIn, user: User = Depends(get_current_user),
-                             retailer: Retailer = Depends(get_current_retailer), db: Session = Depends(get_db)):
+                             retailer: Retailer = Depends(get_current_retailer), db: Session = Depends(get_db),
+                             redis: Redis = Depends(get_redis)):
+    rate_limit.hit(redis, "shop_discount", str(retailer.id), 30, 3600)  # no phone-number fishing / spamming
     req = booking_service.create_discount_request(db, retailer, user, body.phone, body.amount_paise, body.note)
     return _discount_out(db, req, True)
 

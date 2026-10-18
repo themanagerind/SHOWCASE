@@ -16,7 +16,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.core.errors import DomainError, Forbidden, NotFound
+from app.core.errors import Conflict, DomainError, Forbidden, NotFound
 from app.core.phone import normalize_indian_mobile
 from app.models import Booking, Customer, Notification, Product, Retailer, ShopDiscountRequest, User
 from app.models.enums import (
@@ -219,6 +219,11 @@ def create_discount_request(db: Session, retailer: Retailer, user: User, phone: 
         raise NotFound("No Showcase customer with this number", code="customer_not_found")
     if customer.user_id == retailer.user_id:
         raise DomainError("You cannot give a discount to yourself", code="own_shop")
+    if db.scalar(select(ShopDiscountRequest.id).where(
+            ShopDiscountRequest.retailer_id == retailer.id, ShopDiscountRequest.customer_id == customer.id,
+            ShopDiscountRequest.status == DiscountRequestStatus.PENDING,
+            ShopDiscountRequest.expires_at > clock.now()).limit(1)):
+        raise Conflict("This customer already has a request from you waiting", code="request_pending")
     req = ShopDiscountRequest(retailer_id=retailer.id, customer_id=customer.id, amount_paise=amount_paise,
                               note=note.strip()[:120], status=DiscountRequestStatus.PENDING,
                               expires_at=clock.now() + DISCOUNT_REQUEST_VALIDITY, created_by_user_id=user.id)
@@ -263,7 +268,7 @@ def respond_to_discount(db: Session, customer: Customer, request_id: uuid.UUID, 
 def pending_discounts_for_customer(db: Session, customer: Customer) -> list[ShopDiscountRequest]:
     return list(db.scalars(select(ShopDiscountRequest).where(
         ShopDiscountRequest.customer_id == customer.id, ShopDiscountRequest.status == DiscountRequestStatus.PENDING,
-        ShopDiscountRequest.expires_at > clock.now()).order_by(ShopDiscountRequest.created_at.desc())))
+        ShopDiscountRequest.expires_at > clock.now()).order_by(ShopDiscountRequest.created_at.desc()).limit(20)))
 
 
 def discounts_for_retailer(db: Session, retailer: Retailer) -> list[ShopDiscountRequest]:

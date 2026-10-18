@@ -23,7 +23,7 @@ from app.services import plan_service
 IST = ZoneInfo("Asia/Kolkata")
 BROWSER_EVENTS = {ShopEventType.SHOP_VIEW, ShopEventType.PRODUCT_VIEW, ShopEventType.WHATSAPP_CLICK,
                   ShopEventType.CALL_CLICK}
-DEDUPE = timedelta(minutes=30)  # same browser, same shop (or product) -> counted once per 30 minutes
+DEDUPE = timedelta(minutes=30)  # same visitor, same shop/event (or product) -> counted once per 30 minutes
 RETENTION_MONTHS = 13
 _ANON = re.compile(r"^[A-Za-z0-9\-]{8,64}$")
 
@@ -36,7 +36,7 @@ def record(db: Session, retailer_id: uuid.UUID, event_type: ShopEventType, *, cu
 
 
 def track(db: Session, redis: Redis, retailer: Retailer, event_type: ShopEventType, user: User | None,
-          anon_id: str | None, product_id: uuid.UUID | None) -> bool:
+          anon_id: str | None, product_id: uuid.UUID | None, ip: str = "unknown") -> bool:
     """Browser event. Returns False when it was not counted (own shop, duplicate)."""
     if event_type not in BROWSER_EVENTS:
         raise DomainError("This event cannot be sent from the browser", code="invalid_event")
@@ -49,21 +49,22 @@ def track(db: Session, redis: Redis, retailer: Retailer, event_type: ShopEventTy
     if visitor is None:
         raise DomainError("Visitor id required", code="invalid_event")
     rate_limit.hit(redis, "events", visitor, 300, 3600)
+    rate_limit.hit(redis, "events_ip", ip, 600, 3600)  # a fresh anon_id per request must not bypass the cap
     meta = {}
     if event_type == ShopEventType.PRODUCT_VIEW:
         if product_id is None or db.scalar(select(Product.id).where(
                 Product.id == product_id, Product.retailer_id == retailer.id)) is None:
             raise DomainError("Unknown product", code="invalid_event")
         meta = {"product_id": str(product_id)}
-    if event_type in (ShopEventType.SHOP_VIEW, ShopEventType.PRODUCT_VIEW):
-        who = ShopEvent.customer_id == customer_id if customer_id else ShopEvent.anon_id == anon_id
-        recent = select(ShopEvent.id).where(
-            ShopEvent.retailer_id == retailer.id, ShopEvent.event_type == event_type, who,
-            ShopEvent.created_at > clock.now() - DEDUPE)
-        if meta:
-            recent = recent.where(ShopEvent.meta["product_id"].astext == meta["product_id"])
-        if db.scalar(recent.limit(1)) is not None:
-            return False
+    # Every browser event: same visitor, same shop (and product) -> counted once per 30 minutes.
+    who = ShopEvent.customer_id == customer_id if customer_id else ShopEvent.anon_id == anon_id
+    recent = select(ShopEvent.id).where(
+        ShopEvent.retailer_id == retailer.id, ShopEvent.event_type == event_type, who,
+        ShopEvent.created_at > clock.now() - DEDUPE)
+    if meta:
+        recent = recent.where(ShopEvent.meta["product_id"].astext == meta["product_id"])
+    if db.scalar(recent.limit(1)) is not None:
+        return False
     record(db, retailer.id, event_type, customer_id=customer_id, anon_id=None if customer_id else anon_id, meta=meta)
     db.commit()
     return True

@@ -140,7 +140,7 @@ def add_product(
 @router.patch("/me/products/{product_id}", response_model=ProductOut)
 def edit_product(
     product_id: uuid.UUID, body: ProductUpdate,
-    retailer: Retailer = Depends(get_current_retailer), db: Session = Depends(get_db),
+    retailer: Retailer = Depends(require_plan()), db: Session = Depends(get_db),  # closed while expired (SPEC 5)
 ):
     return product_service.edit_product(db, retailer, product_id, body.model_dump(exclude_unset=True))
 

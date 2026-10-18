@@ -76,7 +76,7 @@ def join_shop(slug: str, body: JoinIn, user: User = Depends(get_current_user), d
 @router.get("/retailers/me/customers", response_model=RetailerCustomerPage)
 def my_customers(
     limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0, le=10_000),
     retailer: Retailer = Depends(require_plan()),  # closed while the plan is expired (SPEC 5)
     db: Session = Depends(get_db),
 ):

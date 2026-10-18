@@ -2,7 +2,9 @@ import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, model_validator
+from typing import Annotated
+
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, HttpUrl, model_validator
 
 
 PHONE = r"^\+?[0-9]{10,13}$"
@@ -12,12 +14,31 @@ TIME = r"^([01]\d|2[0-3]):[0-5]\d$"
 DAYS = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
 
 
+def _check_photo(url: str) -> str:
+    """Photos are shown to every visitor: https only, no huge strings / data: or javascript: URLs."""
+    if len(url) > 500 or not url.startswith("https://") or any(c in url for c in ' "\'<>\n\r\t'):
+        raise ValueError("Photo must be an https:// link of at most 500 characters")
+    return url
+
+
+PhotoUrl = Annotated[str, AfterValidator(_check_photo)]
+
+
+def no_nulls(model: BaseModel, fields: tuple[str, ...]) -> None:
+    """PATCH bodies: leaving a field out is fine, sending null for a required column is a 422 (not a 500)."""
+    bad = [f for f in fields if f in model.model_fields_set and getattr(model, f) is None]
+    if bad:
+        raise ValueError(f"These fields cannot be empty: {', '.join(bad)}")
+
+
 def _check_timings(timings: dict | None) -> None:
     if timings is None:
         return
     for day, ranges in timings.items():
         if day not in DAYS:
             raise ValueError(f"Unknown day '{day}' in timings")
+        if len(ranges) > 4:
+            raise ValueError(f"At most 4 time ranges per day ({day})")
         for r in ranges:
             if len(r) != 2 or not all(re.match(TIME, t) for t in r) or r[0] >= r[1]:
                 raise ValueError(f"Invalid time range {r} for {day}")
@@ -27,7 +48,7 @@ class RetailerBase(BaseModel):
     shop_name: str = Field(min_length=2, max_length=120)
     category: str = Field(min_length=2, max_length=60)
     description: str | None = Field(default=None, max_length=2000)
-    photos: list[str] = Field(default_factory=list, max_length=10)
+    photos: list[PhotoUrl] = Field(default_factory=list, max_length=10)
     address_line: str = Field(min_length=3, max_length=255)
     city: str = Field(min_length=2, max_length=80)
     state: str | None = Field(default=None, max_length=80)
@@ -55,7 +76,7 @@ class RetailerUpdate(BaseModel):
     shop_name: str | None = Field(default=None, min_length=2, max_length=120)
     category: str | None = Field(default=None, min_length=2, max_length=60)
     description: str | None = Field(default=None, max_length=2000)
-    photos: list[str] | None = Field(default=None, max_length=10)
+    photos: list[PhotoUrl] | None = Field(default=None, max_length=10)
     address_line: str | None = Field(default=None, min_length=3, max_length=255)
     city: str | None = Field(default=None, min_length=2, max_length=80)
     state: str | None = Field(default=None, max_length=80)
@@ -70,6 +91,8 @@ class RetailerUpdate(BaseModel):
 
     @model_validator(mode="after")
     def _validate(self):
+        no_nulls(self, ("slug", "shop_name", "category", "photos", "address_line", "city", "pincode", "lat", "lng",
+                        "timings"))
         _check_timings(self.timings)
         return self
 
@@ -126,7 +149,7 @@ class ProductCreate(BaseModel):
     mrp_paise: int | None = Field(default=None, ge=0)
     wallet_discount_paise: int = Field(gt=0, description="Mandatory wallet-points discount; also points needed to reserve")
     stock_qty: int = Field(default=0, ge=0)
-    photos: list[str] = Field(default_factory=list, max_length=8)
+    photos: list[PhotoUrl] = Field(default_factory=list, max_length=8)
 
     @model_validator(mode="after")
     def _discount_within_price(self):
@@ -145,7 +168,12 @@ class ProductUpdate(BaseModel):
     mrp_paise: int | None = Field(default=None, ge=0)
     wallet_discount_paise: int | None = Field(default=None, gt=0)
     stock_qty: int | None = Field(default=None, ge=0)
-    photos: list[str] | None = Field(default=None, max_length=8)
+    photos: list[PhotoUrl] | None = Field(default=None, max_length=8)
+
+    @model_validator(mode="after")
+    def _required_not_null(self):
+        no_nulls(self, ("name", "price_paise", "wallet_discount_paise", "stock_qty", "photos"))
+        return self
 
 
 class ProductOut(BaseModel):

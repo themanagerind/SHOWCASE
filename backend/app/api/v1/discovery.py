@@ -22,7 +22,7 @@ def discover(
     city: str | None = Query(None, min_length=2, max_length=80),
     category: str | None = Query(None, max_length=60),
     limit: int = Query(20, ge=1, le=50),
-    offset: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0, le=10_000),
     user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
@@ -75,7 +75,7 @@ def search_products(
     radius_km: int | None = Query(None),
     city: str | None = Query(None, min_length=2, max_length=80),
     limit: int = Query(20, ge=1, le=50),
-    offset: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0, le=10_000),
     user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):

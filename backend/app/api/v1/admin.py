@@ -69,7 +69,7 @@ def list_retailers(
     status: SubscriptionStatus | None = None,
     no_plan: bool = False,
     limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0, le=10_000),
     _: AdminUser = Depends(any_admin),
     db: Session = Depends(get_db),
 ):
@@ -80,9 +80,13 @@ def list_retailers(
         .where(Retailer.deleted_at.is_(None))
     )
     if q:
-        like = f"%{q.strip().lower()}%"
-        base = base.where(or_(func.lower(Retailer.shop_name).like(like), Retailer.slug.like(like),
-                              User.phone.like(f"%{q.strip()}%"), Retailer.city.like(like)))
+        from app.services.discovery_service import _like_escape
+
+        like = f"%{_like_escape(q.strip().lower())}%"
+        base = base.where(or_(func.lower(Retailer.shop_name).like(like, escape="\\"),
+                              Retailer.slug.like(like, escape="\\"),
+                              User.phone.like(f"%{_like_escape(q.strip())}%", escape="\\"),
+                              Retailer.city.like(like, escape="\\")))
     if status is not None:
         base = base.where(Subscription.status == status)
     if no_plan:

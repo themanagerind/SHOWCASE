@@ -3,7 +3,7 @@ import uuid
 from dataclasses import asdict
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 from redis import Redis
 from sqlalchemy.orm import Session
@@ -47,11 +47,12 @@ class DashboardOut(BaseModel):
 
 
 @router.post("/events", response_model=EventOut)
-def track(body: EventIn, user: User | None = Depends(get_optional_user), db: Session = Depends(get_db),
-          redis: Redis = Depends(get_redis)):
+def track(body: EventIn, request: Request, user: User | None = Depends(get_optional_user),
+          db: Session = Depends(get_db), redis: Redis = Depends(get_redis)):
     retailer = retailer_service.get_public(db, body.slug)  # only live shops are tracked
     return EventOut(counted=analytics_service.track(db, redis, retailer, ShopEventType(body.event_type), user,
-                                                    body.anon_id, body.product_id))
+                                                    body.anon_id, body.product_id,
+                                                    request.client.host if request.client else "unknown"))
 
 
 @router.get("/retailers/me/analytics", response_model=DashboardOut)

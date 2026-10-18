@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.enums import JoinSource
 
@@ -42,6 +42,13 @@ class CustomerProfileUpdate(BaseModel):
     flat_number: str | None = Field(default=None, max_length=20)
     floor: str | None = Field(default=None, max_length=10)
     state: str | None = Field(default=None, max_length=60)
+
+    @model_validator(mode="after")
+    def _required_not_null(self):
+        from app.schemas.retailer import no_nulls
+
+        no_nulls(self, ("name", "preferred_language", "city", "contact_consent", "search_radius_km"))
+        return self
 
 
 class JoinIn(BaseModel):

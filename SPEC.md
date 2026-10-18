@@ -42,6 +42,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Joining is idempotent: re-joining keeps the original source. Only shops with a TRIAL/ACTIVE/GRACE subscription can be joined; a retailer cannot join their own shop.
 - Removing a shop from favourites does NOT remove the customer from that retailer's customer list (marked "not favourite"); removal from the list happens only when the customer deletes their account (DPDP).
 - At signup the customer gives name, pincode, city, language and an optional, unticked-by-default consent "shops I join may contact me". The retailer sees the customer's full phone number ONLY with this consent; otherwise it is masked (e.g. `91XXXXXX89`). Consent can be withdrawn any time (its timestamp is cleared).
+- The same consent rule applies wherever a retailer sees a customer's number (customer list and bookings): full number only with consent, masked otherwise (security audit 2026-10-18).
 
 ### 4.3 Product Listing and Weekly Slot-Swap Rule
 
@@ -100,6 +101,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Flow: the retailer enters the customer's mobile number, the discount amount and a short note (e.g. "school bag") → the customer gets a request in the app ("Sharma Electronics offers ₹100 off") → the customer taps **Confirm** (or Decline) → the amount moves from the customer's wallet to the retailer's wallet, recorded in the ledger. Without the customer's confirmation nothing is deducted.
 - A request expires after 30 minutes. If the customer has fewer points than the amount, it cannot be confirmed (the retailer is not shown the customer's balance).
 - Like product discounts, these points count towards retailer reward offers (§4.5).
+- Abuse limits (security audit 2026-10-18): the retailer sees only a short name ("Priya S.") for the number they typed, at most one waiting request per customer per shop, and at most 30 requests per shop per hour.
 
 ### 4.5 Wallets and Points Ledger
 
@@ -161,7 +163,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Dashboard: daily/weekly/monthly visitors, unique vs repeat, top products, WhatsApp/call clicks, booking conversion.
 - Owner decisions (2026-10-18):
   - favourite_add, booking_start (reservation) and booking_confirmed ("I bought it") are recorded by the backend itself; shop_view, product_view, whatsapp_click and call_click come from the browser with a random per-browser id (`anon_id`), or the customer id when logged in.
-  - The retailer's own visits are not counted; the same browser viewing the same shop within 30 minutes counts once; per-browser rate limit against spam.
+  - The retailer's own visits are not counted; the same browser/customer is counted once per 30 minutes for each event type (views and WhatsApp/call clicks) at a shop; rate limits per browser and per IP against spam (security audit 2026-10-18).
   - Location is NOT stored for now (lat/lng stay empty; DPDP minimal data).
   - Full dashboard for plans with `analytics` (PRO, PREMIUM): last 7 / 30 / 90 days — daily visitors chart, new vs repeat visitors, top viewed products, WhatsApp / call clicks, booking conversion (started → bought). BASIC sees only "X people viewed your shop in the last 7 days" with an upgrade note.
   - Raw events are kept 13 months, then deleted automatically.

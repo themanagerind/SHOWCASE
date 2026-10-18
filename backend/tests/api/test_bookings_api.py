@@ -30,7 +30,11 @@ def test_booking_flow_and_rbac(client, login, db, frozen):
 
     # retailer sees it with the customer's contact, but cannot mark it purchased
     rb = client.get("/api/v1/retailers/me/bookings?status=RESERVED", headers=auth(shop_t)).json()
-    assert [x["booking_no"] for x in rb] == [b["booking_no"]] and rb[0]["customer_phone"] == "+919123456780"
+    assert [x["booking_no"] for x in rb] == [b["booking_no"]]
+    assert rb[0]["customer_phone"] == "91XXXXXX80"  # masked: no contact consent (SPEC 4.2)
+    client.patch("/api/v1/customers/me", json={"contact_consent": True}, headers=auth(cust_t))
+    rb = client.get("/api/v1/retailers/me/bookings?status=RESERVED", headers=auth(shop_t)).json()
+    assert rb[0]["customer_phone"] == "+919123456780"
     assert client.post(f"/api/v1/bookings/{b['id']}/purchased", headers=auth(shop_t)).status_code in (403, 404)
 
     r = client.post(f"/api/v1/bookings/{b['id']}/purchased", headers=auth(cust_t))
@@ -76,3 +80,18 @@ def test_unlisted_item_discount_over_http(client, login, db, frozen):
     r = client.post("/api/v1/retailers/me/shop-discounts", json={"phone": "9000011111", "amount_paise": 1000,
                                                                   "note": "x item"}, headers=auth(shop_t))
     assert r.status_code == 404 and r.json()["error"] == "customer_not_found"
+
+
+def test_discount_requests_cannot_be_used_to_fish_names_or_spam(client, login, db, frozen):
+    """Security audit: short name only, one waiting request per customer, 30 per hour per shop."""
+    shop_t, _ = create_shop(client, login, db=db)
+    t = login("9123456780")["access_token"]
+    client.patch("/api/v1/customers/me", json={"name": "Priya Kumari Sharma"}, headers=auth(t))
+    body = {"phone": "9123456780", "amount_paise": 100, "note": "Fan"}
+    r = client.post("/api/v1/retailers/me/shop-discounts", json=body, headers=auth(shop_t))
+    assert r.status_code == 201 and r.json()["customer_name"] == "Priya S."
+    r = client.post("/api/v1/retailers/me/shop-discounts", json=body, headers=auth(shop_t))
+    assert r.status_code == 409 and r.json()["error"] == "request_pending"
+    codes = [client.post("/api/v1/retailers/me/shop-discounts", json={**body, "phone": f"91000{i:05d}"},
+                         headers=auth(shop_t)).status_code for i in range(30)]
+    assert codes[-1] == 429
