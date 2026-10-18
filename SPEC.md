@@ -109,6 +109,13 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Every movement (code redeemed, reservation deduction, purchase discount transfer, forfeit, admin reset) is an append-only ledger entry; a wallet's balance always equals the sum of its ledger entries and can never go negative.
 - **Retailer reward offers (Platform Owner / admin)**: admin can create an offer for a period (e.g. a week or month): "every retailer who collects ≥ X points in this period gets Y% of their total wallet balance as cash". At the end of the period the system lists qualifying retailers and their payout; the cash is paid by the platform owner outside the app and recorded (who, amount, date, reference). After the payout, the participating retailers' wallet balances are reset to 0 via ledger entries (history kept).
 - Retailers must ACCEPT (opt in to) an offer to participate. Only opted-in retailers who qualify and receive the payout have their wallet reset to 0; everyone else keeps their balance.
+- Reward offer details (owner decisions 2026-10-18):
+  - Only one offer at a time: offer periods may not overlap (so the same points can never earn cash twice). Created / cancelled by SUPER_ADMIN only; a cancelled offer pays nothing. An offer with recorded payouts cannot be cancelled.
+  - "Points collected in the period" = points the retailer RECEIVED between start and end: completed purchases (BOOKING_PURCHASED) + confirmed discounts on unlisted items (SHOP_DISCOUNT_RECEIVED). Points from the whole period count, even if the retailer joined mid-way.
+  - Joining needs a live plan (TRIAL/ACTIVE/GRACE); join or leave any time until the offer ends. If the plan expires before the end, a qualifying retailer is still paid.
+  - Qualifies when collected points ≥ threshold (exact threshold qualifies).
+  - Payout is based on the wallet balance AT THE END of the offer (not the day the cash is paid): payout = floor(balance_at_end × percent). Percent is stored in basis points (2000 = 20%).
+  - When the payout is recorded (amount, date, reference — SUPER_ADMIN or SUPPORT, after the offer ends, once per retailer per offer), exactly balance_at_end points are deducted from the retailer wallet (REWARD_RESET). Points earned after the offer ended stay; with no new points the wallet becomes 0.
 
 ### 4.6 Online Orders and Courier
 
@@ -282,6 +289,7 @@ Write automated tests (pytest) for all business rules in the service layer. Do n
 - Wallet balance always equals the sum of its ledger entries and never goes negative; ledger is immutable
 - Code redemption: same `request_id` reused on retry, a code is credited at most once, 404/409 credit nothing
 - Reward offer: only opted-in retailers with ≥ threshold points in the period qualify; non-qualifiers keep their balance; payout = % of balance; their wallets reset to 0 via ledger
+- Reward offer: exact threshold qualifies, one point less does not; points before the start / after the end don't count; payout recorded once per retailer; deduction = balance at the end (later points kept); overlapping offers rejected; no joining after the end or without a live plan
 
 **Subscription and plans**
 - Price resolution order: `price_override` → active `retailer_offer` → `plan.base_price`

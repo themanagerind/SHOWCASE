@@ -45,7 +45,8 @@ def post(db: Session, wallet: Wallet, entry_type: WalletEntryType, amount_paise:
     wallet.balance_paise = new_balance
     entry = WalletLedger(wallet_id=wallet.id, entry_type=entry_type, amount_paise=amount_paise,
                          balance_after_paise=new_balance, reference_type=reference_type, reference_id=reference_id,
-                         note=note, created_by_user_id=user_id)
+                         note=note, created_by_user_id=user_id,
+                         created_at=clock.now())  # app clock: reward-offer periods are judged on this (SPEC 4.5)
     db.add(entry)
     db.flush()
     return entry
