@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { api, ApiError, saveTokens } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { readPrefill } from "@/lib/prefill";
 
 function safeNext(next: string | null): string {
   // Only allow same-site relative paths (prevents open redirects).
@@ -21,6 +22,12 @@ function Login() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fromTM, setFromTM] = useState(false);
+  // Arriving from THE-MANAGER "Shop Now": the number is filled in (still editable); OTP is always required.
+  useEffect(() => {
+    const p = next.startsWith("/welcome") ? readPrefill() : null;
+    if (p) { setPhone(p.mobile.replace(/^\+91/, "")); setFromTM(true); }
+  }, [next]);
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);
@@ -55,6 +62,7 @@ function Login() {
       <div className="card stack">
         <h1>{t("login")}</h1>
         {loggedOut && <div className="banner warn">{t("s_loggedOut")}</div>}
+        {fromTM && !sentTo && <div className="banner info">{t("pf_loginHint")}</div>}
         {!sentTo ? (
           <form className="stack" onSubmit={(e) => { e.preventDefault(); sendOtp(); }}>
             <div>

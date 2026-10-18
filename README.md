@@ -59,3 +59,10 @@ cd backend && MOCK_TM_KEY=dev-shared-key .venv/bin/uvicorn scripts.mock_the_mana
 ```
 Demo codes: `DEMO1500` (₹1,500), `DEMO0500`, `SHOP2500`, `TINY0100`. For production set the real THE-MANAGER URL and the
 shared key (same value as THE-MANAGER's `ECOM_STORE_API_KEY`).
+
+## THE-MANAGER resident prefill (local testing)
+
+With the same mock running, open `http://localhost:8000/dev/shop-now?mobile=9123456789` — it acts as the
+"Shop Now" button: a 5-minute single-use token, then Showcase `/welcome` → login with the number filled in →
+OTP → profile form filled from THE-MANAGER → Save → nearby shops. Contract for THE-MANAGER:
+`docs/integrations/the-manager-prefill.md`. Without THE-MANAGER configured, `/welcome` falls back to the normal signup.

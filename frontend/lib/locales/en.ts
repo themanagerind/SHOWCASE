@@ -268,6 +268,16 @@ const en = {
   lv_bookings: "Your open bookings",
   lv_goBookings: "After buying, tap \"I bought it\" in My bookings",
   r_expiredDash: "Your plan has ended, so customers can't see your shop and new bookings are paused. Renew to bring everything back — nothing is lost. You can still see and cancel open bookings.",
+  pf_loginHint: "Your mobile number was filled in from THE-MANAGER. You can change it. We will send an OTP to confirm.",
+  pf_title: "Welcome to Showcase",
+  pf_expired: "This link has expired. No problem — just continue and fill in your details.",
+  pf_unavailable: "We could not load your details right now. Please continue and fill them in.",
+  pf_continue: "Continue",
+  pf_filled: "We filled in your details from THE-MANAGER. Please check them and tap Save.",
+  pf_mismatch: "These details belong to another mobile number, so they were not shown. Please fill in your own details.",
+  pf_society: "Society / building name",
+  pf_flat: "Flat number",
+  pf_floor: "Floor",
   days: { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" },
 };
 

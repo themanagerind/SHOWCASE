@@ -100,3 +100,11 @@
 - Favourites keep expired shops, greyed as "Currently unavailable" with no details, or "You have an open booking here" linking to the limited view; renewal brings them back to normal.
 - Expired retailer: dashboard says "plan ended — renew, nothing is lost", shows Renew + Bookings, wallet and reward payouts; Products / Share & QR / Customers show a "renew to open this" screen and their APIs return `subscription_required`; bookings list and cancel keep working.
 - 3 new + 1 updated backend tests (236 total); 360px browser run with screenshots in `docs/screenshots/step7/`.
+
+## THE-MANAGER resident signup prefill (Showcase side)
+- SPEC §4.12 build decisions recorded; the integration doc now says the Showcase side is built.
+- `/welcome?prefill=<token>`: the token is removed from the address bar at once and never sent twice; the page has `Referrer-Policy: no-referrer`. The backend redeems it once with THE-MANAGER (same `request_id` on retry), keeps the data 15 minutes in Redis and gives the browser only the mobile number.
+- Login opens with that number filled in (editable); after OTP the profile form is filled — only for the same verified number, read once, only empty fields, consent unticked; nothing is stored until Save; email is never stored. Then the resident lands on nearby shops.
+- Any problem (unknown / expired / used token, wrong key, THE-MANAGER down, rate limit 20/hour/IP) falls back to the normal signup with a friendly message. A resident can always sign up directly; the account is the mobile number.
+- Customers get optional society / address / flat / floor / state and `signup_source` (DIRECT | THE_MANAGER) — migration `0009`.
+- Mock THE-MANAGER gained `/dev/shop-now` and the redeem API; 8 new backend tests (244 total); 360px browser run with screenshots in `docs/screenshots/prefill/`.
