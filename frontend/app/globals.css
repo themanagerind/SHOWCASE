@@ -137,7 +137,7 @@ main.wide { max-width: 760px; }
 .kv td { padding: 4px 0; border-bottom: 1px solid var(--line); }
 .kv td:first-child { color: var(--muted); width: 45%; }
 label.mini { font-weight: 400; font-size: 13px; color: var(--muted); }
-input[type="date"] { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; }
+input[type="date"], input[type="datetime-local"] { min-width: 0; max-width: 100%; box-sizing: border-box; width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; }
 .audit { font-size: 13px; border-bottom: 1px solid var(--line); padding: 6px 0; }
 .audit pre { white-space: pre-wrap; word-break: break-all; margin: 4px 0 0; color: var(--muted); font-size: 12px; }
 /* Header: let the nav wrap to a second line instead of squeezing the language picker. */
@@ -177,3 +177,11 @@ h1, h2, h3, h4,
 .status.FORFEITED, .status.EXPIRED, .status.DECLINED { background: #fdecec; color: #8a1f1f; }
 .status.CANCELLED_BY_RETAILER { background: #fff6e5; color: #7a4a00; }
 .prow .side { text-align: right; max-width: 40%; flex-shrink: 0; }
+
+/* Reward offers (step 6c) */
+.reward { border-top: 4px solid var(--green); }
+.bar { height: 10px; border-radius: 999px; background: #e6ebf2; overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--green); border-radius: 999px; }
+.card.selected { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy) inset; }
+.side.stack { gap: 6px; align-items: flex-end; }
+.row > label.mini { flex: 1 1 140px; min-width: 0; }

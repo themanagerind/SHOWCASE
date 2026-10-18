@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api, rupees } from "@/lib/api";
 import RetailerNav from "@/components/RetailerNav";
+import RewardCard from "@/components/RewardCard";
 import { useI18n } from "@/lib/i18n";
 import { fmtDate, useMyShop } from "@/lib/retailer";
 
@@ -57,6 +58,8 @@ export default function RetailerDashboard() {
           <div className="lbl">{t("r_walletPoints")}</div>
         </div>
       </div>
+
+      <RewardCard />
 
       {live && (
         shop.products_locked_until ? (

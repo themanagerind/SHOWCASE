@@ -86,3 +86,10 @@
 - SPEC §4.4a: retailer can send a wallet discount for an item that is not listed online (customer's phone + amount + item); points move only after the customer confirms in the app within 30 minutes; decline/expiry moves nothing; the retailer never sees the customer's balance.
 - Migration `0007` (bookings, shop_discount_requests, two new ledger types); new pages `/bookings` (booking number, countdown, "I bought it", discount requests) and retailer `Bookings` tab; text in all 8 languages.
 - 22 new backend tests (220 total); 360px browser run of the full flow with screenshots in `docs/screenshots/step6b/`.
+
+## Step 6c — Retailer reward offers
+- SPEC §4.5 owner decisions recorded: one offer at a time (DB exclusion constraint blocks overlapping periods), points received in the whole period count (booking purchases + discounts on unlisted items), joining needs a live plan, payout = floor(balance at the end × percent), only those end-balance points are removed (later points stay).
+- Admin `Rewards` page: create (SUPER_ADMIN), cancel before any payout, participants with collected points / qualifies / payout, record the cash payout with date and reference (SUPER_ADMIN or SUPPORT); payout records are append-only; payouts per retailer must go in offer order (no double cash on the same points).
+- Retailer dashboard card: offer terms, join/leave, progress bar, "target reached", payout history; texts in all 8 languages.
+- Wallet ledger entries now carry the app clock time, so periods are judged consistently (and testable).
+- Migration `0008`; 13 new backend tests (233 total); 360px browser run (admin → retailer → customer purchase → payout) with screenshots in `docs/screenshots/step6c/`.

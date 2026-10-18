@@ -248,6 +248,17 @@ const en = {
   rd_s_CONFIRMED: "Confirmed",
   rd_s_DECLINED: "Declined",
   rd_s_EXPIRED: "Expired",
+  rw_title: "Reward offer",
+  rw_text: "Collect {threshold} points between {start} and {end} and get {percent}% of your wallet balance as cash.",
+  rw_progress: "Collected in this offer",
+  rw_join: "Join offer",
+  rw_leave: "Leave offer",
+  rw_reached: "Target reached! The cash is paid after the offer ends.",
+  rw_resetNote: "After the cash is paid, the points you had at the end of the offer are removed from your wallet. Points earned later stay.",
+  rw_payouts: "Reward payouts",
+  rw_paidText: "{amount} cash paid on {date}",
+  rw_confirmLeave: "Leave this offer? You can join again before it ends.",
+  rw_closed: "This offer is closed.",
   days: { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" },
 };
 

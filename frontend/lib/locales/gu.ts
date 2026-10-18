@@ -249,6 +249,17 @@ const gu: Messages = {
   rd_s_CONFIRMED: "મંજૂર",
   rd_s_DECLINED: "નકાર્યું",
   rd_s_EXPIRED: "પૂરું",
+  rw_title: "રિવોર્ડ ઓફર",
+  rw_text: "{start} થી {end} વચ્ચે {threshold} પોઇન્ટ ભેગા કરો અને તમારા વૉલેટ બેલેન્સના {percent}% રોકડ મેળવો.",
+  rw_progress: "આ ઓફરમાં ભેગા થયા",
+  rw_join: "ઓફરમાં જોડાઓ",
+  rw_leave: "ઓફર છોડો",
+  rw_reached: "લક્ષ્ય પૂરું! ઓફર પૂરી થયા પછી રોકડ મળશે.",
+  rw_resetNote: "રોકડ મળ્યા પછી, ઓફર પૂરી થતી વખતના પોઇન્ટ તમારા વૉલેટમાંથી દૂર થશે. પછી મળેલા પોઇન્ટ રહેશે.",
+  rw_payouts: "રિવોર્ડ ચુકવણી",
+  rw_paidText: "{date}એ {amount} રોકડ મળ્યા",
+  rw_confirmLeave: "આ ઓફર છોડવી છે? પૂરી થાય તે પહેલાં ફરી જોડાઈ શકો છો.",
+  rw_closed: "આ ઓફર બંધ છે.",
   days: { mon: "સોમ", tue: "મંગળ", wed: "બુધ", thu: "ગુરુ", fri: "શુક્ર", sat: "શનિ", sun: "રવિ" },
 };
 
