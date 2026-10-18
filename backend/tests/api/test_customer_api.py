@@ -125,9 +125,17 @@ def test_consent_is_off_by_default_and_timestamped(client, login, frozen):
     assert me["contact_consent"] is False and me["consent_at"] is None
 
 
+def test_all_supported_ui_languages_accepted(client, login):
+    cust = login(CUST_PHONE)["access_token"]
+    assert client.get("/api/v1/customers/me", headers=auth(cust)).json()["preferred_language"] == "en"  # default
+    for lang in ("en", "hi", "gu", "mr", "te", "bn", "kn", "or"):
+        r = client.patch("/api/v1/customers/me", json={"preferred_language": lang}, headers=auth(cust))
+        assert r.status_code == 200 and r.json()["preferred_language"] == lang
+
+
 def test_invalid_profile_rejected(client, login):
     cust = login(CUST_PHONE)["access_token"]
-    for bad in ({"pincode": "012345"}, {"preferred_language": "fr"}, {"name": "A"}):
+    for bad in ({"pincode": "012345"}, {"preferred_language": "fr"}, {"preferred_language": "ta"}, {"name": "A"}):
         assert client.patch("/api/v1/customers/me", json=bad, headers=auth(cust)).status_code == 422
 
 

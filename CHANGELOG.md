@@ -48,3 +48,10 @@
 - Products: add (rupees → paise, discount ≤ price checked), edit (name locked during the weekly lock), hide, multi-slot swap with lock confirmation; hidden products listed.
 - Share & QR (copy link, WhatsApp share, QR download) and customer list (phone only with consent). Header shows "मेरी दुकान" for retailers.
 - API: `/retailers/me` now also returns `swap_locks`, `first_listing_free`, `active_products`, `max_products`, `customers_count`. Browser e2e of the whole retailer journey at 360px; screenshots in `docs/screenshots/retailer/`.
+
+## Languages — English default + 7 Indian languages
+- UI is English by default (owner decision; SPEC §8). Users can switch to Hindi, Bangla, Telugu, Marathi, Gujarati, Kannada or Odia from a dropdown in the header (each shown in its own script); the choice is remembered on the device and saved in the profile.
+- Strings moved to `frontend/lib/locales/<code>.ts`; every locale is typed against English, so a missing translation fails the build (verified).
+- Dates use the matching Indian locale (e.g. `gu-IN`); backend accepts `en|hi|gu|mr|te|bn|kn|or` as `preferred_language`; WhatsApp share text now English.
+- Checked in Chromium at 360px for all 8 languages, logged out and as a retailer (longest header): no overflow, nav links on one line; screenshots in `docs/screenshots/languages/`.
+- Translations were written by the AI assistant — a native-speaker review is recommended before launch.

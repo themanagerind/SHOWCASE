@@ -10,7 +10,7 @@ function ProfileForm() {
   const { t, lang, setLang } = useI18n();
   const router = useRouter();
   const next = useSearchParams().get("next");
-  const [form, setForm] = useState({ name: "", pincode: "", city: "", preferred_language: "hi", contact_consent: false, search_radius_km: 5 });
+  const [form, setForm] = useState({ name: "", pincode: "", city: "", preferred_language: "en", contact_consent: false, search_radius_km: 5 });
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { type DayKey, type Lang, type MessageKey, messages } from "./messages";
+import { type DayKey, DEFAULT_LANG, type Lang, type MessageKey, messages } from "./messages";
 
 const STORAGE_KEY = "showcase.lang";
 
@@ -9,7 +9,7 @@ type I18n = { lang: Lang; setLang: (l: Lang) => void; t: (k: MessageKey) => stri
 const Ctx = createContext<I18n | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("hi");
+  const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
 
   useEffect(() => {
     try {

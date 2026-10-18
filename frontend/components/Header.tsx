@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, isLoggedIn } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { type Lang, LANGS } from "@/lib/messages";
 
 export default function Header() {
   const { lang, setLang, t } = useI18n();
@@ -33,9 +34,9 @@ export default function Header() {
         ) : (
           <Link href="/login">{t("login")}</Link>
         )}
-        <button className="lang-toggle" onClick={() => setLang(lang === "hi" ? "en" : "hi")} aria-label="Language">
-          {lang === "hi" ? "EN" : "हिं"}
-        </button>
+        <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Language">
+          {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+        </select>
       </nav>
     </header>
   );

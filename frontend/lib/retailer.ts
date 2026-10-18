@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, isLoggedIn } from "./api";
-import type { MessageKey } from "./messages";
+import { intlLocale, type Lang, type MessageKey } from "./messages";
 
 export type MyShop = {
   id: string;
@@ -98,7 +98,7 @@ export function errorKey(e: unknown): MessageKey {
   );
 }
 
-export const fmtDate = (iso: string, lang: string) =>
-  new Date(iso).toLocaleString(lang === "hi" ? "hi-IN" : "en-IN", {
+export const fmtDate = (iso: string, lang: Lang) =>
+  new Date(iso).toLocaleString(intlLocale(lang), {
     timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
   });

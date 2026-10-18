@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from app.models.enums import JoinSource
 
 PINCODE = r"^[1-9][0-9]{5}$"
-LANGUAGES = r"^(en|hi)$"  # extend as more UI languages ship
+LANGUAGES = r"^(en|hi|gu|mr|te|bn|kn|or)$"  # SPEC 8: UI languages; extend together with frontend/lib/locales
 
 
 class CustomerProfileOut(BaseModel):

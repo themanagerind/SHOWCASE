@@ -117,3 +117,7 @@ textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); borde
 .qr { width: 220px; height: 220px; display: block; margin: 0 auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .linkbox { display: flex; gap: 8px; }
 .linkbox input { flex: 1; }
+.lang-select { border: 1px solid rgba(255,255,255,.5); background: transparent; color: #fff; border-radius: 999px; padding: 4px 6px; font: inherit; font-size: 13px; max-width: 92px; }
+.lang-select option { color: var(--text); }
+.header nav a { white-space: nowrap; }
+@media (max-width: 400px) { .header nav { gap: 8px; font-size: 13px; } .brand { font-size: 16px; } }

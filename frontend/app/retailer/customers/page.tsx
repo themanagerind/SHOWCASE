@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import RetailerNav from "@/components/RetailerNav";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { intlLocale } from "@/lib/messages";
 import { useMyShop } from "@/lib/retailer";
 
 type Row = {
@@ -43,7 +44,7 @@ export default function CustomersPage() {
                 {!c.contact_consent && <span className="note"> · {t("r_phoneHidden")}</span>}
               </div>
               <div className="muted">
-                {src[c.source]} · {new Date(c.joined_at).toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN", { timeZone: "Asia/Kolkata" })}
+                {src[c.source]} · {new Date(c.joined_at).toLocaleDateString(intlLocale(lang), { timeZone: "Asia/Kolkata" })}
                 {!c.is_favourite && ` · ${t("r_favNo")}`}
               </div>
             </div>

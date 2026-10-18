@@ -103,7 +103,7 @@ def update_shop(body: RetailerUpdate, retailer: Retailer = Depends(get_current_r
 @router.get("/me/share", response_model=ShareOut)
 def share(retailer: Retailer = Depends(get_current_retailer)):
     link = _share_link(retailer, "link")
-    text = f"{retailer.shop_name} — ab online! Hamare products dekhiye: {link}"
+    text = f"{retailer.shop_name} is now online! See our products: {link}"
     return ShareOut(
         link=link, qr_link=_share_link(retailer, "qr"),
         whatsapp_share_url=f"https://wa.me/?text={quote(text)}", qr_png_url="/api/v1/retailers/me/qr",

@@ -15,7 +15,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Database: PostgreSQL with PostGIS extension
 - Background jobs: Celery + Redis (booking timers, reminders, subscription lifecycle)
 - Auth: Phone number + OTP login, JWT access/refresh tokens
-- Frontend: Next.js (React) configured as a PWA (service worker, manifest, Add to Home Screen, push notifications), mobile-first, Hindi + English i18n ready
+- Frontend: Next.js (React) configured as a PWA (service worker, manifest, Add to Home Screen, push notifications), mobile-first, multilingual (English default; see §8)
 - Payments: Retailer's own payment link/UPI (no platform split); Razorpay Subscriptions for retailer plan billing; webhook-ready design
 - Courier: Aggregator integration (Shiprocket/Delhivery etc.) behind an abstract CourierService interface
 - Media: S3-compatible storage / Cloudinary with image compression
@@ -214,7 +214,7 @@ app/
 ## 8. Non-functional Requirements
 
 - Mobile-first, fast on low-end Android phones and 3G/4G; image compression and lazy loading; offline-friendly caching of browsed pages (PWA).
-- Hindi + English UI, structure ready for Gujarati, Marathi, Tamil, etc.
+- UI language: **English by default** (owner decision 2026-10-18). The user can switch to Hindi (hi), Gujarati (gu), Marathi (mr), Telugu (te), Bengali/Bangla (bn), Kannada (kn) or Odia (or); the choice is remembered on the device and saved in the profile. Every language must have every UI string (enforced at build time); more languages (e.g. Tamil) can be added the same way.
 - Security: OTP rate limiting, input validation, signed media URLs, no secrets in code, audit logs for money-related state changes.
 - Money in paise (integers), all timestamps in UTC, display in IST.
 - Dockerized setup (docker-compose: api, postgres+postgis, redis, celery worker/beat), env-based config, OpenAPI docs.
