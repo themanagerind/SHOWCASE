@@ -189,3 +189,12 @@ h1, h2, h3, h4,
 /* Expired shops (step 7) */
 .fav.unavailable { opacity: .65; background: #f4f6f9; }
 .fav.unavailable .thumb { filter: grayscale(1); }
+
+/* Ratings (step 8a) */
+.stars { display: inline-flex; gap: 2px; line-height: 1; color: #c9d1dc; }
+.stars .on { color: #f5a524; }
+.stars.pick button { background: none; border: 0; padding: 4px; font: inherit; color: #c9d1dc; cursor: pointer; min-width: 44px; min-height: 44px; }
+.stars.pick button.on { color: #f5a524; }
+textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; resize: vertical; }
+.review { border-left: 3px solid var(--green); }
+.rating-big { font-size: 28px; font-weight: 800; color: var(--navy); margin-right: 6px; vertical-align: middle; }

@@ -108,3 +108,10 @@
 - Any problem (unknown / expired / used token, wrong key, THE-MANAGER down, rate limit 20/hour/IP) falls back to the normal signup with a friendly message. A resident can always sign up directly; the account is the mobile number.
 - Customers get optional society / address / flat / floor / state and `signup_source` (DIRECT | THE_MANAGER) — migration `0009`.
 - Mock THE-MANAGER gained `/dev/shop-now` and the redeem API; 8 new backend tests (244 total); 360px browser run with screenshots in `docs/screenshots/prefill/`.
+
+## Step 8a — Ratings and reviews
+- SPEC §4.7 owner decisions recorded (and §4.9 analytics decisions for step 8b).
+- Customer rates a purchase — a booking marked "I bought it" or a confirmed discount on an unlisted item — with 1–5 stars and an optional comment, once per purchase, within 30 days, and can change it within those 30 days ("Rate your purchases" on My bookings). Not on your own shop.
+- Shop page shows the average, count and latest reviews; names appear as "Ravi V.", never the phone number. `rating_avg` / `rating_count` (used by discovery ranking) count only visible reviews.
+- Retailer `Reviews` tab: all reviews, "Report abusive review" with a reason. Admin `Reviews` page: flagged queue, Hide (out of the page and the average) or Keep; any admin role may moderate.
+- Migration `0010`; 4 new backend tests (248 total); 360px browser run with screenshots in `docs/screenshots/step8a/`.

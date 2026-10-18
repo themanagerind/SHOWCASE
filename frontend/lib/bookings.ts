@@ -36,6 +36,8 @@ export function bookingErrorKey(e: unknown): MessageKey {
     request_expired: "d_expired",
     request_closed: "b_closed",
     customer_not_found: "rd_errCustomer",
+    review_window_closed: "rv_errWindow",
+    purchase_not_found: "genericError",
     subscription_required: "r_errPlan",
     offer_closed: "rw_closed",
   } as Record<string, MessageKey>)[e.code] ?? "genericError");

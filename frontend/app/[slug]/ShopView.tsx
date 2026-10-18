@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, isLoggedIn, rupees, type Product, type Storefront } from "@/lib/api";
 import { bookingErrorKey, fill } from "@/lib/bookings";
+import ShopReviews from "@/components/ShopReviews";
 import { useI18n } from "@/lib/i18n";
 
 export default function ShopView({ data, slug, source }: { data: Storefront | null; slug: string; source: "LINK" | "QR" }) {
@@ -106,6 +107,7 @@ export default function ShopView({ data, slug, source }: { data: Storefront | nu
           ))}
         </div>
       )}
+      <ShopReviews slug={slug} />
     </main>
   );
 }

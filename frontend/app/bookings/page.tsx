@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { api, isLoggedIn, rupees } from "@/lib/api";
 import { type Booking, bookingErrorKey, type DiscountRequest, fill, timeLeft } from "@/lib/bookings";
+import RatePurchases from "@/components/RatePurchases";
 import { useI18n } from "@/lib/i18n";
 import type { MessageKey } from "@/lib/messages";
 import { fmtDate } from "@/lib/retailer";
@@ -56,6 +57,7 @@ function BookingsInner() {
     <main className="stack">
       <h1>{t("b_title")}</h1>
       {msg && <div className={msg.ok ? "success" : "banner warn"}>{msg.text}</div>}
+      <RatePurchases refreshKey={bookings.filter((b) => b.status === "PURCHASED").length} />
 
       {requests.length > 0 && (
         <>

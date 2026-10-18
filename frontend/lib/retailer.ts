@@ -23,6 +23,8 @@ export type MyShop = {
   max_products: number | null;
   customers_count: number;
   share_link: string;
+  rating_avg: number;
+  rating_count: number;
 };
 
 export type OwnProduct = {
