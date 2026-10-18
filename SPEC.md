@@ -90,7 +90,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - A reservation is valid for **24 hours** from creation. If not PURCHASED by then, a Celery job marks it FORFEITED (idempotent; the boundary is exact: at 24h 00m it is forfeited).
 - A reservation holds 1 unit of stock (per quantity booked); stock is released on FORFEITED or CANCELLED_BY_RETAILER, and consumed on PURCHASED. No stock → cannot reserve.
 - The platform never handles the shop payment.
-- One booking = 1 unit; a customer can hold only one active booking per product.
+- One booking = 1 unit. A customer may hold **multiple bookings, including several of the same product** (owner decision 2026-10-18); each booking deducts its own points and holds its own unit of stock.
 - **In-shop purchase without a prior booking** uses the same flow: at the counter the customer taps "Use wallet discount" (creates the booking) and then "I bought it" (owner decision 2026-10-18).
 - The forfeit job runs every 5 minutes.
 
