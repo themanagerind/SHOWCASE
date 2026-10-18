@@ -84,12 +84,15 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - On reservation, exactly the discount amount is deducted from the customer's wallet immediately.
 - Points deducted for a booking are NEVER returned to the customer.
 - **Booking state machine**:
-  - `RESERVED → PURCHASED`: customer buys the product at the shop. The booking's points become the purchase discount (not deducted again): customer pays price − discount at the shop, and the points are credited to the retailer's wallet.
+  - `RESERVED → PURCHASED`: customer buys the product at the shop and **the CUSTOMER confirms it by tapping "I bought it" in their app** (owner decision 2026-10-18; no code, and the retailer cannot mark a booking purchased — this prevents retailers claiming points for sales that did not happen). The booking's points become the purchase discount (not deducted again): customer pays price − discount at the shop, and the points are credited to the retailer's wallet.
   - `RESERVED → FORFEITED`: customer does not buy. The points disappear (credited to nobody), but the full record stays visible to customer, retailer and admin.
   - `RESERVED → CANCELLED_BY_RETAILER`: retailer cannot honour the booking (e.g. out of stock). The points ARE returned to the customer's wallet (the customer did nothing wrong).
 - A reservation is valid for **24 hours** from creation. If not PURCHASED by then, a Celery job marks it FORFEITED (idempotent; the boundary is exact: at 24h 00m it is forfeited).
 - A reservation holds 1 unit of stock (per quantity booked); stock is released on FORFEITED or CANCELLED_BY_RETAILER, and consumed on PURCHASED. No stock → cannot reserve.
-- Retailer marks "Purchased" in the app; the platform never handles the shop payment.
+- The platform never handles the shop payment.
+- One booking = 1 unit; a customer can hold only one active booking per product.
+- **In-shop purchase without a prior booking** uses the same flow: at the counter the customer taps "Use wallet discount" (creates the booking) and then "I bought it" (owner decision 2026-10-18).
+- The forfeit job runs every 5 minutes.
 
 ### 4.5 Wallets and Points Ledger
 
@@ -245,7 +248,7 @@ app/
 3. Customer signup via retailer link/QR + favourites
 4. Discovery with PostGIS and plan-based visibility
 5. Subscription system + admin controls (trial, pricing, offers, grace) + lifecycle jobs
-6. Wallets (THE-MANAGER code redemption, points ledger) + booking with points + purchase + retailer reward offers
+6. Wallets (THE-MANAGER code redemption, points ledger) + booking with points + purchase + retailer reward offers — built as 6a (wallets + code redemption), 6b (bookings), 6c (reward offers)
 7. Expired-retailer limited access behaviour
 8. Ratings, analytics events and dashboard
 9. Courier integration (abstract service + one provider)
