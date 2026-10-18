@@ -32,10 +32,10 @@ export default function RetailerDashboard() {
               <span className="status-pill">{shop.subscription_status}</span>
             </>
           ) : (
-            <span className="plan-pill" style={{ background: "var(--danger)" }}>—</span>
+            <span className="plan-pill" style={{ background: "var(--danger)" }}>{shop.plan_expired ? t("p_EXPIRED") : "—"}</span>
           )}
         </div>
-        {!live && <div className="banner warn">{t("r_noPlan")}</div>}
+        {!live && <div className="banner warn">{shop.plan_expired ? t("r_expiredDash") : t("r_noPlan")}</div>}
         {shop.subscription_status === "TRIAL" && <div className="banner ok">{t("p_TRIAL")}</div>}
         {shop.subscription_status === "GRACE" && <div className="banner warn">{t("p_GRACE")} — {t("p_renew")}</div>}
         <Link className="btn secondary" href="/retailer/plan">{t("p_seePlans")}</Link>
@@ -45,7 +45,7 @@ export default function RetailerDashboard() {
         <div className="stat">
           <div className="num">
             {shop.active_products}
-            <span style={{ fontSize: 16, color: "var(--muted)" }}> / {shop.max_products ?? t("r_unlimited")}</span>
+            <span style={{ fontSize: 16, color: "var(--muted)" }}> / {live ? shop.max_products ?? t("r_unlimited") : "—"}</span>
           </div>
           <div className="lbl">{t("r_activeProducts")}</div>
         </div>
@@ -76,11 +76,20 @@ export default function RetailerDashboard() {
         )
       )}
 
-      <Link className="btn" href="/retailer/products">{t("r_products")}</Link>
-      <div className="row">
-        <Link className="btn secondary" href="/retailer/share">{t("r_share")}</Link>
-        <Link className="btn secondary" href={`/${shop.slug}`}>{t("r_viewShop")}</Link>
-      </div>
+      {live ? (
+        <>
+          <Link className="btn" href="/retailer/products">{t("r_products")}</Link>
+          <div className="row">
+            <Link className="btn secondary" href="/retailer/share">{t("r_share")}</Link>
+            <Link className="btn secondary" href={`/${shop.slug}`}>{t("r_viewShop")}</Link>
+          </div>
+        </>
+      ) : (
+        <>
+          <Link className="btn" href="/retailer/plan">{t("p_renew")}</Link>
+          <Link className="btn secondary" href="/retailer/bookings">{t("rb_title")}</Link>
+        </>
+      )}
     </main>
   );
 }

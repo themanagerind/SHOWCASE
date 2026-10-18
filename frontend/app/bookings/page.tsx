@@ -83,7 +83,7 @@ function BookingsInner() {
             <div className="info">
               <div className="pname">{b.product_name}</div>
               <div className="note">
-                {b.shop_slug ? <Link href={`/${b.shop_slug}`}>{b.shop_name}</Link> : b.shop_name} · {rupees(b.price_paise)}
+                {b.shop_slug ? <Link href={`/bookings/shop/${b.shop_slug}`}>{b.shop_name}</Link> : b.shop_name} · {rupees(b.price_paise)}
               </div>
             </div>
             <span className="status RESERVED">{t("b_s_RESERVED")}</span>

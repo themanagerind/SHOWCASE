@@ -93,3 +93,10 @@
 - Retailer dashboard card: offer terms, join/leave, progress bar, "target reached", payout history; texts in all 8 languages.
 - Wallet ledger entries now carry the app clock time, so periods are judged consistently (and testable).
 - Migration `0008`; 13 new backend tests (233 total); 360px browser run (admin → retailer → customer purchase → payout) with screenshots in `docs/screenshots/step6c/`.
+
+## Step 7 — Expired-retailer limited access
+- SPEC §5 owner decisions recorded: what the limited view shows and for how long, greyed favourites, which retailer screens stay open.
+- Customer with an open booking at an expired shop gets a limited view (`/bookings/shop/{slug}`): address, WhatsApp, call, map link, timings and their open bookings — no products; it closes as soon as the booking is bought / forfeited / cancelled. Everyone else still gets "shop not available".
+- Favourites keep expired shops, greyed as "Currently unavailable" with no details, or "You have an open booking here" linking to the limited view; renewal brings them back to normal.
+- Expired retailer: dashboard says "plan ended — renew, nothing is lost", shows Renew + Bookings, wallet and reward payouts; Products / Share & QR / Customers show a "renew to open this" screen and their APIs return `subscription_required`; bookings list and cancel keep working.
+- 3 new + 1 updated backend tests (236 total); 360px browser run with screenshots in `docs/screenshots/step7/`.

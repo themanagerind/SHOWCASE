@@ -14,6 +14,7 @@ export type MyShop = {
   whatsapp_url: string | null;
   plan_code: string | null;
   subscription_status: string | null;
+  plan_expired: boolean;
   products_locked_until: string | null;
   can_change_products_now: boolean;
   swap_locks: boolean;

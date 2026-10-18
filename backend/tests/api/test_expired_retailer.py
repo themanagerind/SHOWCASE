@@ -69,7 +69,8 @@ def test_expired_retailer_keeps_bookings_loses_products_share_customers(client, 
         r = client.get(url, headers=auth(shop_t))
         assert r.status_code == 403 and r.json()["error"] == "subscription_required", url
     assert client.post("/api/v1/retailers/me/products", json=product_data(2), headers=auth(shop_t)).status_code == 403
-    assert client.get("/api/v1/retailers/me", headers=auth(shop_t)).status_code == 200  # dashboard
+    me = client.get("/api/v1/retailers/me", headers=auth(shop_t)).json()  # dashboard still opens
+    assert (me["plan_code"], me["plan_expired"]) == (None, True)
     assert client.get("/api/v1/retailers/me/wallet", headers=auth(shop_t)).status_code == 200
     rb = client.get("/api/v1/retailers/me/bookings", headers=auth(shop_t)).json()
     assert [x["booking_no"] for x in rb] == [b["booking_no"]]

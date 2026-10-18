@@ -100,6 +100,7 @@ class RetailerOwnerOut(RetailerPublicOut):
     id: uuid.UUID
     plan_code: str | None
     subscription_status: str | None
+    plan_expired: bool = False  # had a plan that is no longer live (SPEC 5 limited access)
     products_locked_until: datetime | None
     can_change_products_now: bool
     swap_locks: bool  # false for plans without the weekly lock (PREMIUM)

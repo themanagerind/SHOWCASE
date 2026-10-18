@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PlanLocked from "@/components/PlanLocked";
 import RetailerNav from "@/components/RetailerNav";
 import { api } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -23,8 +24,9 @@ export default function CustomersPage() {
     api<Page>(`/retailers/me/customers?limit=${PAGE}&offset=${offset}`).then((p) =>
       setData((prev) => (offset === 0 || !prev ? p : { total: p.total, items: [...prev.items, ...p.items] })));
 
-  useEffect(() => { if (shop) load(0); }, [shop]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (shop?.plan_code) load(0); }, [shop]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (shop && !shop.plan_code) return <PlanLocked />;
   if (!shop || !data) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
   const src = { LINK: t("viaLink"), QR: t("viaQr"), DISCOVERY: t("viaApp") };
 

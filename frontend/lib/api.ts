@@ -174,6 +174,8 @@ export type Favourite = {
   photo: string | null;
   whatsapp_url: string | null;
   source: "LINK" | "QR" | "DISCOVERY";
+  available: boolean; // false: the shop's plan has expired (SPEC 5)
+  limited_view: boolean; // expired, but I have an open booking there
 };
 
 /** ₹199 for whole rupees, ₹199.50 otherwise (never ₹199.5). */

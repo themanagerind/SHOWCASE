@@ -259,6 +259,15 @@ const en = {
   rw_paidText: "{amount} cash paid on {date}",
   rw_confirmLeave: "Leave this offer? You can join again before it ends.",
   rw_closed: "This offer is closed.",
+  r_lockedTitle: "Renew to open this",
+  r_lockedExpired: "Your plan has ended, so this section is closed. Renew your plan — all your products, customers and data are safe and come back at once.",
+  f_unavailable: "Currently unavailable",
+  f_openBooking: "You have an open booking here — tap for shop details",
+  lv_notice: "This shop is not on Showcase right now. You can still visit it to complete your booking.",
+  lv_map: "Open in Maps",
+  lv_bookings: "Your open bookings",
+  lv_goBookings: "After buying, tap \"I bought it\" in My bookings",
+  r_expiredDash: "Your plan has ended, so customers can't see your shop and new bookings are paused. Renew to bring everything back — nothing is lost. You can still see and cancel open bookings.",
   days: { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" },
 };
 

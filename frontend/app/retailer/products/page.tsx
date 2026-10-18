@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import ProductForm from "@/components/ProductForm";
+import PlanLocked from "@/components/PlanLocked";
 import RetailerNav from "@/components/RetailerNav";
 import { api, rupees } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -19,7 +20,7 @@ export default function RetailerProducts() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const load = useCallback(async () => setItems(await api<OwnProduct[]>("/retailers/me/products")), []);
-  useEffect(() => { if (shop) load(); }, [shop, load]);
+  useEffect(() => { if (shop?.plan_code) load(); }, [shop, load]);
 
   async function run(fn: () => Promise<unknown>) {
     setMsg(null);
@@ -34,6 +35,7 @@ export default function RetailerProducts() {
     }
   }
 
+  if (shop && !shop.plan_code) return <PlanLocked />;
   if (!shop || !items) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
 
   const active = items.filter((p) => p.is_active);

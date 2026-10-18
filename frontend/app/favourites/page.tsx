@@ -37,11 +37,14 @@ function Favourites() {
         <div className="card muted">{t("noFavourites")}</div>
       ) : (
         items.map((f) => (
-          <div className="card fav" key={f.slug}>
+          <div className={`card fav ${f.available ? "" : "unavailable"}`} key={f.slug}>
             {f.photo ? <img className="thumb" src={f.photo} alt="" loading="lazy" /> : <div className="thumb" />}
             <div className="info">
-              <Link href={`/${f.slug}`}>{f.shop_name}</Link>
+              {f.available ? <Link href={`/${f.slug}`}>{f.shop_name}</Link>
+                : f.limited_view ? <Link href={`/bookings/shop/${f.slug}`}>{f.shop_name}</Link>
+                : <span className="pname">{f.shop_name}</span>}
               <div className="muted">{f.category} · <span className="cap">{f.city}</span> · {sourceLabel[f.source]}</div>
+              {!f.available && <div className="note">{t(f.limited_view ? "f_openBooking" : "f_unavailable")}</div>}
             </div>
             <button className="linkbtn" onClick={() => remove(f.slug)}>{t("remove")}</button>
           </div>

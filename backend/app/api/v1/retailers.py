@@ -5,13 +5,14 @@ from urllib.parse import quote
 import qrcode
 from fastapi import APIRouter, Depends
 from fastapi.responses import Response
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core import clock
 from app.core.config import get_settings
 from app.core.dependencies import get_current_retailer, get_current_user, require_plan
 from app.db.session import get_db
-from app.models import Retailer, User
+from app.models import Retailer, Subscription, User
 from app.schemas.retailer import (
     KeepIn,
     ProductCreate,
@@ -72,6 +73,7 @@ def _owner_out(db: Session, retailer: Retailer) -> RetailerOwnerOut:
         max_products=features.max_products if features else None,
         customers_count=customer_service.count_customers(db, retailer),
         share_link=_share_link(retailer, "link"),
+        plan_expired=sub is None and db.scalar(select(Subscription.id).where(Subscription.retailer_id == retailer.id)) is not None,
     )
 
 

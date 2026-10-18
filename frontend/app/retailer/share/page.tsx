@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import PlanLocked from "@/components/PlanLocked";
 import RetailerNav from "@/components/RetailerNav";
 import { api, API_URL } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -16,7 +17,7 @@ export default function SharePage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!shop) return;
+    if (!shop?.plan_code) return;
     api<Share>("/retailers/me/share").then(setShare);
     // The QR endpoint needs the auth header, so fetch it as a blob instead of a plain <img src>.
     let url: string | null = null;
@@ -26,6 +27,7 @@ export default function SharePage() {
     return () => { if (url) URL.revokeObjectURL(url); };
   }, [shop]);
 
+  if (shop && !shop.plan_code) return <PlanLocked />;
   if (!shop || !share) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
 
   return (
