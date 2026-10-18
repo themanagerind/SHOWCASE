@@ -71,3 +71,9 @@
 - Profile → "Logged-in devices" (browser + phone type, last active, "this device"), log out any one device or all other devices (lost phone).
 - Customers/retailers: logged out after 30 days without use (sliding); admins: logged out 12 h after login even if active (`ADMIN_SESSION_HOURS`). A device whose session ended is sent to login with "You were logged out" (all 8 languages).
 - Migration `0005`; 10 new tests (181 total); two-device browser e2e; screenshots in `docs/screenshots/sessions/`.
+
+## Step 6a — Wallets and THE-MANAGER code redemption
+- Customer and retailer wallets (1 point = 1 paisa) with an append-only `wallet_ledger` (DB trigger) and a cached balance that can never go negative (service check + DB constraint); balance always equals the ledger sum.
+- Code redemption per the agreed contract: the attempt is saved before calling THE-MANAGER; lost responses are retried with the same `request_id` (3 immediate tries + a 5-minute Celery job); 404/409 rejected, 401/503 reported as integration errors; a code can be credited at most once in Showcase; the raw code is not kept; 10 attempts/hour per customer.
+- `scripts/mock_the_manager.py` (dev stand-in with demo codes) and the real HTTP client tested against it, incl. replay and float rejection.
+- Screens: customer Wallet (balance, add code, history) in all 8 languages; wallet points tile on the retailer dashboard. Migration `0006`; 17 new tests (198 total).

@@ -1,5 +1,6 @@
 from app.db.session import SessionLocal
-from app.services import subscription_service
+from app.services import subscription_service, wallet_service
+from app.services.the_manager import get_the_manager_client
 from app.workers.celery_app import celery_app
 
 
@@ -7,3 +8,9 @@ from app.workers.celery_app import celery_app
 def run_subscription_lifecycle() -> dict:
     with SessionLocal() as db:
         return subscription_service.run_lifecycle(db)
+
+
+@celery_app.task(name="wallet.retry_pending_redemptions")
+def retry_pending_redemptions() -> dict:
+    with SessionLocal() as db:
+        return wallet_service.retry_pending(db, get_the_manager_client())

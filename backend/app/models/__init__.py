@@ -9,9 +9,10 @@ from app.models.subscription import (
     SubscriptionPayment,
 )
 from app.models.user import AdminUser, Customer, RefreshToken, User
+from app.models.wallet import Wallet, WalletLedger, WalletRedemption
 
 __all__ = [
     "AdminUser", "Customer", "Lead", "Notification", "Order", "Plan", "PlatformSetting", "Product", "ProductSwap", "RefreshToken", "Retailer",
     "RetailerCustomer", "RetailerOffer", "Review", "Shipment", "ShopEvent", "Subscription",
-    "SubscriptionAuditLog", "SubscriptionPayment", "User",
+    "SubscriptionAuditLog", "SubscriptionPayment", "User", "Wallet", "WalletLedger", "WalletRedemption",
 ]

@@ -50,3 +50,12 @@ The admin logs in with OTP like everyone else and gets an **Admin** link (`/admi
 Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` in `.env`, and in the Razorpay
 dashboard add a webhook to `https://<api-host>/api/v1/webhooks/razorpay` for `payment.captured`.
 Until the keys are set, retailers see "pay the Showcase team by UPI" and admins record payments manually.
+
+## THE-MANAGER wallet codes (local testing)
+
+```bash
+cd backend && MOCK_TM_KEY=dev-shared-key .venv/bin/uvicorn scripts.mock_the_manager:app --port 8000
+# Showcase .env: THE_MANAGER_BASE_URL=http://localhost:8000  THE_MANAGER_API_KEY=dev-shared-key
+```
+Demo codes: `DEMO1500` (₹1,500), `DEMO0500`, `SHOP2500`, `TINY0100`. For production set the real THE-MANAGER URL and the
+shared key (same value as THE-MANAGER's `ECOM_STORE_API_KEY`).

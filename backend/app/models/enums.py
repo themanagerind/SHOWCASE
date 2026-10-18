@@ -99,3 +99,24 @@ class NotificationStatus(enum.StrEnum):
     PENDING = "PENDING"
     SENT = "SENT"
     FAILED = "FAILED"
+
+
+class WalletOwnerType(enum.StrEnum):
+    CUSTOMER = "CUSTOMER"
+    RETAILER = "RETAILER"
+
+
+class WalletEntryType(enum.StrEnum):
+    CODE_REDEEMED = "CODE_REDEEMED"            # + customer: THE-MANAGER code value
+    BOOKING_HOLD = "BOOKING_HOLD"              # - customer: points for a reservation
+    BOOKING_PURCHASED = "BOOKING_PURCHASED"    # + retailer: discount points of a completed purchase
+    BOOKING_FORFEITED = "BOOKING_FORFEITED"    # 0 customer: record only, points vanish
+    BOOKING_CANCEL_REFUND = "BOOKING_CANCEL_REFUND"  # + customer: retailer cancelled
+    REWARD_RESET = "REWARD_RESET"              # - retailer: reset to 0 after a reward payout
+
+
+class RedemptionStatus(enum.StrEnum):
+    PENDING = "PENDING"      # saved before calling THE-MANAGER; retried with the same request_id
+    CREDITED = "CREDITED"
+    REJECTED = "REJECTED"    # 404 / 409 from THE-MANAGER
+    ERROR = "ERROR"          # 401 / 503: integration problem, code not consumed

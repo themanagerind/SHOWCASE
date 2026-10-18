@@ -30,6 +30,7 @@ export default function Header() {
           <>
             {isAdmin && <Link href="/admin">Admin</Link>}
             {isRetailer && <Link href="/retailer">{t("r_myShop")}</Link>}
+            <Link href="/wallet">{t("w_nav")}</Link>
             <Link href="/favourites">{t("navFavourites")}</Link>
             <Link href="/profile">{t("profile")}</Link>
           </>
