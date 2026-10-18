@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     public_base_url: str = "http://localhost:3000"
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # Razorpay (retailer plan billing). Empty = online payment off; admins record payments manually.
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
+
     # THE-MANAGER wallet integration (SPEC 4.11) — flow not built yet
     the_manager_base_url: str = "http://localhost:8000"
     the_manager_api_key: str = ""

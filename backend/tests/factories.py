@@ -82,3 +82,13 @@ def point_from(db, lat: float, lng: float, meters: float, bearing_deg: float = 0
 
     origin = func.ST_GeogFromText(f"SRID=4326;POINT({lng} {lat})")
     return db.scalar(select(func.ST_Project(origin, meters, func.radians(bearing_deg))))
+
+
+def make_super_admin(db, role: str = "SUPER_ADMIN"):
+    from app.models import AdminUser
+    from app.models.enums import AdminRole
+
+    a = AdminUser(user_id=make_user(db).id, role=AdminRole(role))
+    db.add(a)
+    db.flush()
+    return a

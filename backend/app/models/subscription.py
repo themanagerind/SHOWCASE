@@ -15,10 +15,8 @@ class Plan(Model):
 
     code: Mapped[str] = mapped_column(String(20), unique=True)
     name: Mapped[str] = mapped_column(String(60))
-    base_price_paise: Mapped[int] = mapped_column(BigInteger)
-    billing_period: Mapped[BillingPeriod] = mapped_column(
-        pg_enum(BillingPeriod, "billing_period"), default=BillingPeriod.MONTHLY
-    )
+    base_price_paise: Mapped[int] = mapped_column(BigInteger)  # monthly, GST-inclusive
+    yearly_price_paise: Mapped[int] = mapped_column(BigInteger)  # GST-inclusive
     features: Mapped[dict] = mapped_column(JSONB, default=dict)
     priority: Mapped[int] = mapped_column(SmallInteger, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
@@ -38,6 +36,9 @@ class Subscription(Model):
 
     retailer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("retailers.id"), unique=True)
     plan_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("plans.id"))
+    billing_cycle: Mapped[BillingPeriod] = mapped_column(
+        pg_enum(BillingPeriod, "billing_period"), default=BillingPeriod.MONTHLY, server_default="MONTHLY"
+    )
     status: Mapped[SubscriptionStatus] = mapped_column(pg_enum(SubscriptionStatus, "subscription_status"))
     trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     current_period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -56,7 +57,8 @@ class RetailerOffer(Model):
     __tablename__ = "retailer_offers"
 
     retailer_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("retailers.id"), index=True)
-    plan_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("plans.id"))
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("plans.id"))  # None = any plan
+    billing_cycle: Mapped[BillingPeriod | None] = mapped_column(pg_enum(BillingPeriod, "billing_period"))  # None = any
     offer_type: Mapped[OfferType] = mapped_column(pg_enum(OfferType, "offer_type"))
     value: Mapped[int] = mapped_column(BigInteger)  # percent for PERCENT, paise otherwise
     valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -67,19 +69,31 @@ class RetailerOffer(Model):
 
 
 class SubscriptionPayment(Model):
+    """One paid (or pending) billing period. The subscription's state is derived from PAID periods."""
+
     __tablename__ = "subscription_payments"
+    __table_args__ = (Index("ix_subscription_payments_subscription_id_status", "subscription_id", "status"),)
 
     subscription_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("subscriptions.id"), index=True)
-    amount_paise: Mapped[int] = mapped_column(BigInteger)
-    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    plan_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("plans.id"))
+    billing_cycle: Mapped[BillingPeriod] = mapped_column(pg_enum(BillingPeriod, "billing_period"))
+    amount_paise: Mapped[int] = mapped_column(BigInteger)  # GST-inclusive
+    gst_paise: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    price_source: Mapped[str] = mapped_column(String(20))  # OVERRIDE | OFFER | BASE | ADMIN
+    period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # set when PAID
+    period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[SubscriptionPaymentStatus] = mapped_column(
         pg_enum(SubscriptionPaymentStatus, "subscription_payment_status")
     )
-    gateway: Mapped[str] = mapped_column(String(30), default="razorpay")
+    gateway: Mapped[str] = mapped_column(String(30), default="razorpay")  # razorpay | manual
+    gateway_order_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     gateway_payment_id: Mapped[str | None] = mapped_column(String(64), unique=True)
+    reference: Mapped[str | None] = mapped_column(String(120))  # UTR / receipt no. for manual payments
+    recorded_by_admin_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("admin_users.id"))
     raw_payload: Mapped[dict | None] = mapped_column(JSONB)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    plan: Mapped["Plan"] = relationship()
 
 
 class SubscriptionAuditLog(Model):

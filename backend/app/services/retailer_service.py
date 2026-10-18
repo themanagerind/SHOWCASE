@@ -60,6 +60,11 @@ def create(db: Session, user: User, data: dict) -> Retailer:
     data["city"] = normalize_city(data["city"])
     retailer = Retailer(user_id=user.id, slug=slug, location=to_point(lat, lng), **data)
     db.add(retailer)
+    db.flush()
+    # SPEC 5: the free trial (if enabled by admin) starts automatically with the shop.
+    from app.services import subscription_service
+
+    subscription_service.start_trial_if_enabled(db, retailer)
     db.commit()
     db.refresh(user)
     return retailer

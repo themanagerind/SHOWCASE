@@ -103,3 +103,21 @@ def login(client, sms):
 
 def auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(autouse=True)
+def trial_off(request):
+    """Most tests attach subscriptions themselves, so the auto-started free trial is off unless a test enables it."""
+    if "db" not in request.fixturenames:
+        yield
+        return
+    db = request.getfixturevalue("db")
+    db.execute(text("UPDATE platform_settings SET value = jsonb_set(value, '{enabled}', 'false') WHERE key = 'trial'"))
+    yield
+
+
+def set_setting(db, key: str, value: dict) -> None:
+    import json
+
+    db.execute(text("UPDATE platform_settings SET value = CAST(:v AS jsonb) WHERE key = :k"), {"k": key, "v": json.dumps(value)})
+    db.flush()

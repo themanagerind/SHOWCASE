@@ -58,3 +58,21 @@ def require_plan(feature: str | None = None) -> Callable[..., Retailer]:
         return retailer
 
     return checker
+
+
+def require_admin(super_admin: bool = False) -> Callable[..., object]:
+    """SUPPORT can view, extend grace and record payments; prices/offers/plans/settings need SUPER_ADMIN."""
+    from app.models import AdminUser
+    from app.models.enums import AdminRole
+
+    def checker(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> AdminUser:
+        from sqlalchemy import select
+
+        admin = db.scalar(select(AdminUser).where(AdminUser.user_id == user.id, AdminUser.is_active.is_(True)))
+        if admin is None:
+            raise Forbidden("Admin access only")
+        if super_admin and admin.role != AdminRole.SUPER_ADMIN:
+            raise Forbidden("Only a super admin can do this", code="super_admin_only")
+        return admin
+
+    return checker

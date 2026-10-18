@@ -16,7 +16,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Background jobs: Celery + Redis (booking timers, reminders, subscription lifecycle)
 - Auth: Phone number + OTP login, JWT access/refresh tokens
 - Frontend: Next.js (React) configured as a PWA (service worker, manifest, Add to Home Screen, push notifications), mobile-first, multilingual (English default; see §8)
-- Payments: Retailer's own payment link/UPI (no platform split); Razorpay Subscriptions for retailer plan billing; webhook-ready design
+- Payments: Retailer's own payment link/UPI (no platform split); Razorpay (Orders + Checkout, webhook-verified) for retailer plan billing — UPI autopay/Subscriptions can be added later behind the same gateway interface; admin can also record offline payments
 - Courier: Aggregator integration (Shiprocket/Delhivery etc.) behind an abstract CourierService interface
 - Media: S3-compatible storage / Cloudinary with image compression
 
@@ -73,7 +73,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
   - During the lock, product name and category cannot be changed (that would effectively replace the product); outside the lock they can be edited without counting as a swap.
   - Plan downgrade with too many active products (e.g. PRO 20 → BASIC 5): the retailer chooses which products stay active; until they do, only the most recently activated N products are shown publicly. This does not count as a swap.
 - One phone number = one retailer shop. The same user may also be a customer of other shops.
-- Seed plan prices (monthly, admin-editable): BASIC ₹199, PRO ₹399, PREMIUM ₹999.
+- Seed plan prices (admin-editable, GST-inclusive): monthly BASIC ₹199, PRO ₹399, PREMIUM ₹999; yearly ("4 months free", ~33% off) BASIC ₹1,599, PRO ₹3,199, PREMIUM ₹7,999.
 
 ### 4.4 Booking / Reservation with Wallet Points (core rule)
 
@@ -179,7 +179,17 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
   2. Increase/decrease base price of any plan (apply to new retailers only or all)
   3. Personalised offer for a specific retailer (percent discount / fixed discount / custom price, with validity dates and reason)
   4. Extend a specific retailer's grace period (default grace days is also a global setting)
-- **Final price resolution order**: (1) subscription `price_override` → (2) active `retailer_offer` → (3) `plan.base_price`.
+- **Final price resolution order**: (1) subscription `price_override` → (2) active `retailer_offer` → (3) `plan.base_price` (monthly) / `plan.yearly_price` (yearly).
+- **Owner decisions (2026-10-18):**
+  - Billing cycles: **monthly or yearly — the retailer chooses**. Yearly default = "4 months free". Prices are **GST-inclusive** (18%, shown separately on the receipt).
+  - Payment: **Razorpay** (keys added to `.env` when the account is ready). Until then, and for retailers who pay by UPI/cash, an admin records the payment manually ("Mark paid"). Every payment, either way, is recorded with its period.
+  - Free trial default: **enabled, 30 days, PRO plan**; given once per retailer, started automatically when the shop is created.
+  - Trial ending without payment → **GRACE** (default 7 days) → EXPIRED, same as a paid period.
+  - **Plan change** (e.g. BASIC → PRO) by the retailer takes effect **from the next renewal** (the paid period starts when the current one ends). An admin can change the plan **immediately**.
+  - Paying before the current period/trial ends adds the new period after it (no days lost).
+  - Base-price change "new retailers only": existing subscriptions keep their current price as a recorded `price_override` (grandfathered) for the same plan and cycle.
+  - Admin roles: SUPER_ADMIN (everything) and SUPPORT (view, extend grace, record payments — no price/offer/plan/settings changes).
+  - The lifecycle job runs **hourly** (more precise than daily); reminders 3 days before expiry are de-duplicated.
 - **Lifecycle**: `TRIAL → ACTIVE → GRACE → EXPIRED` (also CANCELLED). When the period ends, status becomes GRACE and all features continue until `grace_ends_at`; when grace ends, status becomes EXPIRED. Celery daily job handles transitions and sends reminders 3 days before expiry (push + WhatsApp-ready notification).
 - Audit log for every admin change (`subscription_audit_log`: admin, action, old/new value, timestamp).
 
