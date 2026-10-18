@@ -164,6 +164,13 @@ const hi: Messages = {
   p_offer: "आपके लिए खास कीमत",
   p_seePlans: "प्लान देखें",
   p_payFailed: "भुगतान पूरा नहीं हुआ। कृपया फिर से कोशिश करें।",
+  s_devices: "लॉग-इन डिवाइस",
+  s_thisDevice: "यह डिवाइस",
+  s_lastActive: "आखिरी बार इस्तेमाल",
+  s_logoutDevice: "लॉगआउट",
+  s_logoutOthers: "बाकी सभी डिवाइस से लॉगआउट करें",
+  s_confirmOthers: "बाकी सभी डिवाइस से लॉगआउट करें?",
+  s_loggedOut: "आप लॉगआउट हो गए हैं। कृपया फिर से लॉगिन करें।",
   days: { mon: "सोम", tue: "मंगल", wed: "बुध", thu: "गुरु", fri: "शुक्र", sat: "शनि", sun: "रवि" },
 };
 

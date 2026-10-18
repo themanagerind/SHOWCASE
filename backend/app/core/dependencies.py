@@ -22,7 +22,20 @@ def get_current_user(
     user = db.get(User, uuid.UUID(payload["sub"]))
     if user is None or not user.is_active or user.deleted_at is not None:
         raise Unauthorized("Account disabled", code="account_disabled")
+    if "sid" not in payload:
+        raise Unauthorized("Please log in again", code="session_ended")
+    from app.services.auth_service import check_session
+
+    check_session(db, user, uuid.UUID(payload["sid"]))
     return user
+
+
+def get_session_id(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> uuid.UUID | None:
+    """The caller's login session id (already validated by get_current_user)."""
+    if creds is None:
+        return None
+    sid = decode_token(creds.credentials, "access").get("sid")
+    return uuid.UUID(sid) if sid else None
 
 
 def get_optional_user(

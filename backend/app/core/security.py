@@ -15,12 +15,13 @@ def hash_otp(phone: str, code: str) -> str:
     return hmac.new(key, f"{phone}:{code}".encode(), hashlib.sha256).hexdigest()
 
 
-def create_access_token(user_id: uuid.UUID, roles: list[str]) -> str:
+def create_access_token(user_id: uuid.UUID, roles: list[str], session_id: uuid.UUID) -> str:
     s = get_settings()
     now = clock.now()
     payload = {
         "sub": str(user_id),
         "roles": roles,
+        "sid": str(session_id),  # login session (refresh-token family); checked on every request
         "type": "access",
         "iat": now,
         "exp": now + timedelta(minutes=s.access_token_minutes),

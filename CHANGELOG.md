@@ -65,3 +65,9 @@
 
 ## UI convention — capital headings everywhere
 - One universal setting (`--heading-case` in `frontend/app/globals.css`) puts every heading (h1–h4), header link, dashboard tab (`.rnav`) and toggle tab (`.tabs`) in CAPITALS; new screens get it automatically, custom headings use `ui-heading`. Recorded in SPEC §8 as a rule for all future screens. Indic scripts are unaffected (no capitals).
+
+## Sessions & logout
+- Logout now ends the session on the server too, effective immediately: access tokens carry a session id (`sid`) that is checked on every request.
+- Profile → "Logged-in devices" (browser + phone type, last active, "this device"), log out any one device or all other devices (lost phone).
+- Customers/retailers: logged out after 30 days without use (sliding); admins: logged out 12 h after login even if active (`ADMIN_SESSION_HOURS`). A device whose session ended is sent to login with "You were logged out" (all 8 languages).
+- Migration `0005`; 10 new tests (181 total); two-device browser e2e; screenshots in `docs/screenshots/sessions/`.

@@ -164,6 +164,13 @@ const gu: Messages = {
   p_offer: "તમારા માટે ખાસ કિંમત",
   p_seePlans: "પ્લાન જુઓ",
   p_payFailed: "ચુકવણી પૂરી ન થઈ. ફરી પ્રયાસ કરો.",
+  s_devices: "લૉગ-ઇન ડિવાઇસ",
+  s_thisDevice: "આ ડિવાઇસ",
+  s_lastActive: "છેલ્લો ઉપયોગ",
+  s_logoutDevice: "લૉગઆઉટ",
+  s_logoutOthers: "બાકીના બધા ડિવાઇસમાંથી લૉગઆઉટ કરો",
+  s_confirmOthers: "બાકીના બધા ડિવાઇસમાંથી લૉગઆઉટ કરવું છે?",
+  s_loggedOut: "તમે લૉગઆઉટ થઈ ગયા છો. ફરી લૉગિન કરો.",
   days: { mon: "સોમ", tue: "મંગળ", wed: "બુધ", thu: "ગુરુ", fri: "શુક્ર", sat: "શનિ", sun: "રવિ" },
 };
 

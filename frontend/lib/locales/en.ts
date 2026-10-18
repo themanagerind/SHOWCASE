@@ -163,6 +163,13 @@ const en = {
   p_offer: "Special price for you",
   p_seePlans: "See plans",
   p_payFailed: "Payment was not completed. Please try again.",
+  s_devices: "Logged-in devices",
+  s_thisDevice: "This device",
+  s_lastActive: "Last active",
+  s_logoutDevice: "Log out",
+  s_logoutOthers: "Log out from all other devices",
+  s_confirmOthers: "Log out from all other devices?",
+  s_loggedOut: "You were logged out. Please log in again.",
   days: { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" },
 };
 

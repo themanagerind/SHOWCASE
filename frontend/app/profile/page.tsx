@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { api, ApiError, clearTokens, isLoggedIn, type Profile, RADIUS_OPTIONS } from "@/lib/api";
+import { api, ApiError, isLoggedIn, logout, type Profile, RADIUS_OPTIONS } from "@/lib/api";
+import DeviceSessions from "@/components/DeviceSessions";
 import { useI18n } from "@/lib/i18n";
 import { LANGS, type Lang } from "@/lib/messages";
 
@@ -94,10 +95,11 @@ function ProfileForm() {
         <button className="btn" disabled={busy}>{t("save")}</button>
         {msg && <div className={msg.ok ? "success" : "error"}>{msg.text}</div>}
         <a className="btn secondary" href="/retailer">🏪 {t("r_ownShopCta")}</a>
-        <button type="button" className="btn secondary" onClick={() => { clearTokens(); location.href = "/"; }}>
+        <button type="button" className="btn secondary" onClick={async () => { await logout(); location.href = "/"; }}>
           {t("logout")}
         </button>
       </form>
+      <DeviceSessions />
     </main>
   );
 }

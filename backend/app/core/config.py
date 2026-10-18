@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(min_length=32)
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 30
-    refresh_token_days: int = 30
+    refresh_token_days: int = 30  # sliding: unused for this long -> logged out
+    admin_session_hours: int = 12  # admins are logged out this long after login, even if active
 
     otp_length: int = 6
     otp_ttl_seconds: int = 300

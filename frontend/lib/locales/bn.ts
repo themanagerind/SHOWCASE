@@ -164,6 +164,13 @@ const bn: Messages = {
   p_offer: "আপনার জন্য বিশেষ দাম",
   p_seePlans: "প্ল্যান দেখুন",
   p_payFailed: "পেমেন্ট সম্পূর্ণ হয়নি। আবার চেষ্টা করুন।",
+  s_devices: "লগ-ইন করা ডিভাইস",
+  s_thisDevice: "এই ডিভাইস",
+  s_lastActive: "শেষ ব্যবহার",
+  s_logoutDevice: "লগআউট",
+  s_logoutOthers: "বাকি সব ডিভাইস থেকে লগআউট করুন",
+  s_confirmOthers: "বাকি সব ডিভাইস থেকে লগআউট করবেন?",
+  s_loggedOut: "আপনি লগআউট হয়ে গেছেন। আবার লগইন করুন।",
   days: { mon: "সোম", tue: "মঙ্গল", wed: "বুধ", thu: "বৃহঃ", fri: "শুক্র", sat: "শনি", sun: "রবি" },
 };
 

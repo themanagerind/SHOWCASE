@@ -1,9 +1,13 @@
+import uuid
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Request
+from pydantic import BaseModel
 from redis import Redis
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_session_id
 from app.core.redis import get_redis
 from app.db.session import get_db
 from app.models import User
@@ -57,3 +61,35 @@ def logout(body: RefreshIn, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)):
     return _user_out(user)
+
+
+class SessionOut(BaseModel):
+    id: uuid.UUID
+    device: str
+    started_at: datetime
+    last_active_at: datetime
+    current: bool
+
+
+class LogoutAllIn(BaseModel):
+    keep_current: bool = True
+
+
+@router.get("/sessions", response_model=list[SessionOut])
+def sessions(user: User = Depends(get_current_user), sid: uuid.UUID | None = Depends(get_session_id),
+             db: Session = Depends(get_db)):
+    """Devices where this account is logged in."""
+    return [SessionOut(**vars(s)) for s in auth_service.list_sessions(db, user, sid)]
+
+
+@router.post("/sessions/{session_id}/logout", status_code=204)
+def logout_session(session_id: uuid.UUID, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    auth_service.logout_session(db, user, session_id)
+
+
+@router.post("/logout-all")
+def logout_all(body: LogoutAllIn, user: User = Depends(get_current_user), sid: uuid.UUID | None = Depends(get_session_id),
+               db: Session = Depends(get_db)):
+    """Log out of every device (optionally keeping this one)."""
+    n = auth_service.logout_everywhere(db, user, sid if body.keep_current else None)
+    return {"revoked_tokens": n}

@@ -43,6 +43,8 @@ class RefreshToken(Model):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     user_agent: Mapped[str | None] = mapped_column(String(255))
+    # When this login (family) started; copied on every rotation. Used for the admin max-session rule.
+    session_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class AdminUser(Model):

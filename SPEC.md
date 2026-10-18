@@ -14,7 +14,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Backend: FastAPI (Python), SQLAlchemy 2.x, Alembic migrations, Pydantic v2
 - Database: PostgreSQL with PostGIS extension
 - Background jobs: Celery + Redis (booking timers, reminders, subscription lifecycle)
-- Auth: Phone number + OTP login, JWT access/refresh tokens
+- Auth: Phone number + OTP login (no passwords), JWT access/refresh tokens. **Sessions (owner decision 2026-10-18):** one session per device/browser; logout ends the session on the server immediately (access tokens carry the session id and are checked on every request); users see their logged-in devices in Profile and can log out one device or all other devices; customers/retailers stay logged in while they use the app and are logged out after 30 days without use; admins are logged out 12 hours after login even if active (`ADMIN_SESSION_HOURS`).
 - Frontend: Next.js (React) configured as a PWA (service worker, manifest, Add to Home Screen, push notifications), mobile-first, multilingual (English default; see §8)
 - Payments: Retailer's own payment link/UPI (no platform split); Razorpay (Orders + Checkout, webhook-verified) for retailer plan billing — UPI autopay/Subscriptions can be added later behind the same gateway interface; admin can also record offline payments
 - Courier: Aggregator integration (Shiprocket/Delhivery etc.) behind an abstract CourierService interface

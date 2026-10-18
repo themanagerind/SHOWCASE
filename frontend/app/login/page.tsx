@@ -13,7 +13,9 @@ function safeNext(next: string | null): string {
 function Login() {
   const { t } = useI18n();
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
+  const loggedOut = params.get("reason") === "logged_out";
   const [phone, setPhone] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -52,6 +54,7 @@ function Login() {
     <main>
       <div className="card stack">
         <h1>{t("login")}</h1>
+        {loggedOut && <div className="banner warn">{t("s_loggedOut")}</div>}
         {!sentTo ? (
           <form className="stack" onSubmit={(e) => { e.preventDefault(); sendOtp(); }}>
             <div>

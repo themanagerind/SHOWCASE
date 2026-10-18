@@ -34,6 +34,30 @@ export function clearTokens() {
 
 export const isLoggedIn = () => !!read(ACCESS);
 
+const SESSION_GONE = new Set(["session_ended", "session_expired", "token_reused", "account_disabled"]);
+
+/** The server said this login no longer exists (logged out elsewhere, admin 12h limit, ...): go to login. */
+function sessionGone() {
+  clearTokens();
+  if (typeof window !== "undefined" && !location.pathname.startsWith("/login")) {
+    location.href = `/login?reason=logged_out&next=${encodeURIComponent(location.pathname + location.search)}`;
+  }
+}
+
+/** Ends this device's session on the server too, then forgets the tokens here. */
+export async function logout(): Promise<void> {
+  const refresh = read(REFRESH);
+  try {
+    if (refresh) {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refresh_token: refresh }),
+      });
+    }
+  } finally {
+    clearTokens();
+  }
+}
+
 async function refreshTokens(): Promise<boolean> {
   const refresh = read(REFRESH);
   if (!refresh) return false;
@@ -43,7 +67,7 @@ async function refreshTokens(): Promise<boolean> {
     body: JSON.stringify({ refresh_token: refresh }),
   });
   if (!r.ok) {
-    clearTokens();
+    sessionGone();
     return false;
   }
   const data = await r.json();
@@ -60,6 +84,7 @@ export async function api<T>(path: string, init: RequestInit = {}, retry = true)
   if (r.status === 401 && retry && (await refreshTokens())) return api<T>(path, init, false);
   if (!r.ok) {
     const body = await r.json().catch(() => ({}));
+    if (r.status === 401 && SESSION_GONE.has(body.error)) sessionGone();
     throw new ApiError(r.status, body.error ?? "error", body.message ?? r.statusText);
   }
   return (r.status === 204 ? undefined : await r.json()) as T;
