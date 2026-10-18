@@ -79,22 +79,25 @@ def remove_favourite(db: Session, user: User, slug: str) -> None:
     db.commit()
 
 
-def list_favourites(db: Session, user: User) -> list[tuple[Retailer, RetailerCustomer]]:
-    """Favourite shops that are publicly live. Expired shops come back in step 7 (limited view)."""
+def list_favourites(db: Session, user: User) -> list[tuple[Retailer, RetailerCustomer, bool, bool]]:
+    """All favourite shops with (live, has_open_booking). An expired shop stays in the list (SPEC 5):
+    greyed without details, or with the limited view while the customer has an open booking there."""
+    from app.services import booking_service
+
     customer = get_customer(db, user)
+    live_ids = select(Subscription.retailer_id).where(Subscription.status.in_(LIVE_SUBSCRIPTION_STATUSES))
     rows = db.execute(
-        select(Retailer, RetailerCustomer)
+        select(Retailer, RetailerCustomer, Retailer.id.in_(live_ids))
         .join(RetailerCustomer, RetailerCustomer.retailer_id == Retailer.id)
-        .join(Subscription, Subscription.retailer_id == Retailer.id)
         .where(
             RetailerCustomer.customer_id == customer.id,
             RetailerCustomer.is_favourite.is_(True),
             Retailer.deleted_at.is_(None),
-            Subscription.status.in_(LIVE_SUBSCRIPTION_STATUSES),
         )
         .order_by(RetailerCustomer.created_at.desc())
     ).all()
-    return [(r, rc) for r, rc in rows]
+    return [(r, rc, bool(live), not live and booking_service.has_open_booking(db, customer.id, r.id))
+            for r, rc, live in rows]
 
 
 def mask_phone(phone: str) -> str:

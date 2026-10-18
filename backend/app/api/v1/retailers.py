@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core import clock
 from app.core.config import get_settings
-from app.core.dependencies import get_current_retailer, get_current_user
+from app.core.dependencies import get_current_retailer, get_current_user, require_plan
 from app.db.session import get_db
 from app.models import Retailer, User
 from app.schemas.retailer import (
@@ -101,7 +101,7 @@ def update_shop(body: RetailerUpdate, retailer: Retailer = Depends(get_current_r
 
 
 @router.get("/me/share", response_model=ShareOut)
-def share(retailer: Retailer = Depends(get_current_retailer)):
+def share(retailer: Retailer = Depends(require_plan())):  # closed while expired (SPEC 5)
     link = _share_link(retailer, "link")
     text = f"{retailer.shop_name} is now online! See our products: {link}"
     return ShareOut(
@@ -111,7 +111,7 @@ def share(retailer: Retailer = Depends(get_current_retailer)):
 
 
 @router.get("/me/qr", response_class=Response, responses={200: {"content": {"image/png": {}}}})
-def qr_png(retailer: Retailer = Depends(get_current_retailer)):
+def qr_png(retailer: Retailer = Depends(require_plan())):
     buf = io.BytesIO()
     qrcode.make(_share_link(retailer, "qr"), box_size=10, border=2).save(buf, format="PNG")
     return Response(
@@ -121,7 +121,7 @@ def qr_png(retailer: Retailer = Depends(get_current_retailer)):
 
 
 @router.get("/me/products", response_model=list[ProductOut])
-def my_products(retailer: Retailer = Depends(get_current_retailer), db: Session = Depends(get_db)):
+def my_products(retailer: Retailer = Depends(require_plan()), db: Session = Depends(get_db)):
     return product_service.list_own(db, retailer)
 
 

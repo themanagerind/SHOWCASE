@@ -72,7 +72,8 @@ def test_cannot_join_shop_without_live_subscription(client, login, db):
     assert join(client, cust, slug="no-such-shop").status_code == 404
 
 
-def test_expired_shop_disappears_from_favourites(client, login, db):
+def test_expired_shop_stays_in_favourites_greyed_without_details(client, login, db):
+    """SPEC 5 (step 7): kept in the list, marked unavailable, no WhatsApp/photo."""
     setup_shop(client, login, db)
     cust = login(CUST_PHONE)["access_token"]
     join(client, cust)
@@ -82,7 +83,9 @@ def test_expired_shop_disappears_from_favourites(client, login, db):
 
     db.scalar(select(Subscription).where(Subscription.retailer_id == shop.id)).status = SubscriptionStatus.EXPIRED
     db.flush()
-    assert client.get("/api/v1/customers/me/favourites", headers=auth(cust)).json() == []
+    favs = client.get("/api/v1/customers/me/favourites", headers=auth(cust)).json()
+    assert [(f["slug"], f["available"], f["limited_view"], f["whatsapp_url"]) for f in favs] == [
+        ("sharma-electronics", False, False, None)]
 
 
 def test_retailer_cannot_join_own_shop(client, login, db):

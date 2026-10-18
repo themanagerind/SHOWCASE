@@ -45,6 +45,8 @@ class FavouriteOut(BaseModel):
     whatsapp_url: str | None
     source: JoinSource
     joined_at: datetime
+    available: bool = True  # False: plan expired — shown greyed (SPEC 5)
+    limited_view: bool = False  # expired, but the customer has an open booking there
 
 
 class RetailerCustomerOut(BaseModel):

@@ -125,6 +125,39 @@ def decline_discount(request_id: uuid.UUID, user: User = Depends(get_current_use
     return _discount_out(db, booking_service.respond_to_discount(db, customer, request_id, False), False)
 
 
+class LimitedShopOut(BaseModel):
+    """SPEC 5 limited view: contact details and the customer's open bookings — no products."""
+    slug: str
+    shop_name: str
+    category: str
+    address_line: str
+    city: str
+    state: str | None
+    pincode: str
+    lat: float | None
+    lng: float | None
+    phone: str | None
+    whatsapp_url: str | None
+    timings: dict
+    live: bool
+    bookings: list[BookingOut]
+
+
+@router.get("/bookings/shops/{slug}", response_model=LimitedShopOut)
+def limited_shop(slug: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.api.v1.retailers import wa_url
+    from app.services import plan_service, retailer_service
+
+    retailer, open_ = booking_service.limited_view(db, customer_service.get_customer(db, user), slug)
+    lat, lng = retailer_service.lat_lng(retailer)
+    return LimitedShopOut(
+        slug=retailer.slug, shop_name=retailer.shop_name, category=retailer.category,
+        address_line=retailer.address_line, city=retailer.city, state=retailer.state, pincode=retailer.pincode,
+        lat=lat, lng=lng, phone=retailer.phone, whatsapp_url=wa_url(retailer.whatsapp_number), timings=retailer.timings,
+        live=plan_service.get_live_subscription(db, retailer.id) is not None,
+        bookings=[_booking_out(db, b, False) for b in open_])
+
+
 # ---- retailer -------------------------------------------------------------------------------------
 
 @router.get("/retailers/me/bookings", response_model=list[BookingOut])

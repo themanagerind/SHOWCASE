@@ -168,6 +168,24 @@ def forfeit_expired(db: Session, now: datetime | None = None) -> int:
     return done
 
 
+def has_open_booking(db: Session, customer_id: uuid.UUID, retailer_id: uuid.UUID) -> bool:
+    """RESERVED and still inside its 24h (the forfeit job may run a few minutes late)."""
+    return db.scalar(select(Booking.id).where(
+        Booking.customer_id == customer_id, Booking.retailer_id == retailer_id,
+        Booking.status == BookingStatus.RESERVED, Booking.expires_at > clock.now()).limit(1)) is not None
+
+
+def limited_view(db: Session, customer: Customer, slug: str) -> tuple[Retailer, list[Booking]]:
+    """SPEC 5: a shop's contact details + the customer's open bookings, even if the shop's plan expired —
+    but only while the customer has an open booking there."""
+    retailer = db.scalar(select(Retailer).where(Retailer.slug == slug, Retailer.deleted_at.is_(None)))
+    if retailer is None or not has_open_booking(db, customer.id, retailer.id):
+        raise NotFound("Shop not found")
+    open_ = [b for b in list_for_customer(db, customer, BookingStatus.RESERVED)
+             if b.retailer_id == retailer.id and b.expires_at > clock.now()]
+    return retailer, open_
+
+
 def list_for_customer(db: Session, customer: Customer, status: BookingStatus | None = None) -> list[Booking]:
     q = select(Booking).where(Booking.customer_id == customer.id)
     if status:

@@ -218,6 +218,10 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 | EXPIRED | **NO** | No | No | **YES** |
 
 - **Expired retailer exception**: public discovery hides the shop, BUT any customer who has an open RESERVED booking with that retailer still sees the shop in their "My Bookings/Favourites" with a limited view (address, contact, WhatsApp, booking). Expired retailers keep limited login access ONLY to complete existing bookings. No data is deleted; renewing restores everything.
+- Expired-state details (owner decisions 2026-10-18):
+  - Limited view = shop name, address, phone, WhatsApp, timings, map link and the customer's own open bookings — no product list. Shown only while the customer has an open RESERVED booking; it disappears when the booking closes (bought / forfeited / cancelled).
+  - Favourites: an expired shop stays in the list, greyed, "currently unavailable", with no details (unless the limited view applies). It returns to normal when the plan is renewed.
+  - Expired retailer can use: Dashboard (wallet balance and reward payouts visible), Plan (renew) and Bookings (see and cancel open bookings, history). Products, Share & QR and the Customers list are closed with a "renew your plan — all data is safe" message. Joining reward offers needs a live plan; an earlier joined offer still pays if qualified.
 
 ## 6. Database Tables (minimum)
 
@@ -306,6 +310,7 @@ Write automated tests (pytest) for all business rules in the service layer. Do n
 - PINCODE-scope shop is not shown to a customer in a different pincode; CITY-scope not shown outside the city; INDIA-scope shown anywhere within the customer's radius
 - EXPIRED retailer is absent from public discovery, but IS shown (limited view) to a customer with an open booking with them
 - Expired retailer can complete existing bookings but cannot add products or take new bookings
+- Limited view only for a customer with an open booking, and gone once it closes; expired retailer's customer list / QR / product changes are refused, bookings list and cancel work
 - Ranking is by distance ring (radius / 6), then rating; plan priority only as tie-break
 - Radius boundary is exact (just inside shown, just outside hidden); without GPS the fallback uses profile pincode/city and rating order
 
