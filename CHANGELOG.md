@@ -121,3 +121,8 @@
 - Retailer `Insights` tab (PRO / PREMIUM): 7 / 30 / 90 days — visitors, shop views, WhatsApp and call clicks, favourites, booking conversion, a visitors-per-day bar chart with hover/tap details and a table view, new vs returning visitors, bookings, most seen products. BASIC sees "X people viewed your shop in the last 7 days" with an upgrade note; an expired plan shows the renew screen.
 - Raw events older than 13 months are deleted by a daily job.
 - 4 new backend tests (252 total); 360px browser run (real visitor events + 30 days of sample data in the dev database only) with screenshots in `docs/screenshots/step8b/`.
+
+## Security audit (2026-10-18)
+- Full review in four areas (login/sessions, money/points, data exposure, frontend/config/dependencies); 18 findings fixed with regression tests (race tests use real threads and fail on the old code). Details, open items and the production checklist: `docs/SECURITY.md`.
+- Highlights: OTPs no longer logged outside dev and production refuses unsafe settings; Postgres/Redis local-only with a Redis password; atomic OTP verification; no name-fishing via shop discount requests; payment/payout race fixes; open redirect closed; CSP and security headers; input limits.
+- Frontend now has ESLint (`npm run lint`, 0 errors). Backend: 273 tests passing.

@@ -1,9 +1,11 @@
 // Minimal service worker: network-first for pages, cache fallback when offline.
 // Full offline caching and push notifications come in step 11.
-const CACHE = "showcase-v1";
+const CACHE = "showcase-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
+self.addEventListener("activate", (e) => e.waitUntil(
+  caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+    .then(() => self.clients.claim())));
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
@@ -11,7 +13,9 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(req)
       .then((res) => {
-        if (res.ok && (req.mode === "navigate" || req.destination === "script" || req.destination === "style")) {
+        // Never cache a URL with a query string (e.g. /welcome?prefill=<one-time token>).
+        if (res.ok && !new URL(req.url).search &&
+            (req.mode === "navigate" || req.destination === "script" || req.destination === "style")) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
         }

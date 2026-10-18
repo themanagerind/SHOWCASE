@@ -24,7 +24,7 @@ export default function CustomersPage() {
     api<Page>(`/retailers/me/customers?limit=${PAGE}&offset=${offset}`).then((p) =>
       setData((prev) => (offset === 0 || !prev ? p : { total: p.total, items: [...prev.items, ...p.items] })));
 
-  useEffect(() => { if (shop?.plan_code) load(0); }, [shop]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (shop?.plan_code) load(0); }, [shop]); // eslint-disable-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
 
   if (shop && !shop.plan_code) return <PlanLocked />;
   if (!shop || !data) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;

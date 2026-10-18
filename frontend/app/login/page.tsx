@@ -5,11 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { api, ApiError, saveTokens } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { readPrefill } from "@/lib/prefill";
-
-function safeNext(next: string | null): string {
-  // Only allow same-site relative paths (prevents open redirects).
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/favourites";
-}
+import { safeNext } from "@/lib/safe-next";
 
 function Login() {
   const { t } = useI18n();

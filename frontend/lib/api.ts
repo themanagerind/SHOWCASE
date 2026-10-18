@@ -55,6 +55,8 @@ export async function logout(): Promise<void> {
     }
   } finally {
     clearTokens();
+    try { sessionStorage.clear(); } catch { /* ignore */ }
+    try { if ("caches" in window) for (const k of await caches.keys()) await caches.delete(k); } catch { /* ignore */ }
   }
 }
 

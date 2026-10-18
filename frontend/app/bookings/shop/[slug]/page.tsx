@@ -20,7 +20,7 @@ export default function LimitedShopPage() {
   const { slug } = useParams<{ slug: string }>();
   const [shop, setShop] = useState<LimitedShop | null>(null);
   const [gone, setGone] = useState(false);
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     if (!isLoggedIn()) { router.replace(`/login?next=/bookings/shop/${slug}`); return; }

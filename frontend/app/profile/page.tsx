@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { api, ApiError, isLoggedIn, logout, type Profile, RADIUS_OPTIONS } from "@/lib/api";
 import DeviceSessions from "@/components/DeviceSessions";
 import { useI18n } from "@/lib/i18n";
+import { safeNext } from "@/lib/safe-next";
 import { LANGS, type Lang } from "@/lib/messages";
 
 function ProfileForm() {
@@ -39,7 +41,8 @@ function ProfileForm() {
     try {
       await api("/customers/me", { method: "PATCH", body: JSON.stringify(form) });
       setLang(form.preferred_language as Lang);
-      if (next && next.startsWith("/") && !next.startsWith("//")) router.replace(next);
+      const dest = safeNext(next, "");
+      if (dest) router.replace(dest);
       else setMsg({ ok: true, text: t("saved") });
     } catch (err) {
       setMsg({ ok: false, text: err instanceof ApiError ? err.message : t("genericError") });
@@ -94,7 +97,7 @@ function ProfileForm() {
         </label>
         <button className="btn" disabled={busy}>{t("save")}</button>
         {msg && <div className={msg.ok ? "success" : "error"}>{msg.text}</div>}
-        <a className="btn secondary" href="/retailer">🏪 {t("r_ownShopCta")}</a>
+        <Link className="btn secondary" href="/retailer">🏪 {t("r_ownShopCta")}</Link>
         <button type="button" className="btn secondary" onClick={async () => { await logout(); location.href = "/"; }}>
           {t("logout")}
         </button>
