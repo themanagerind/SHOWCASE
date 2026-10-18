@@ -23,10 +23,11 @@ from app.models.enums import (
     BookingStatus,
     DiscountRequestStatus,
     NotificationChannel,
+    ShopEventType,
     WalletEntryType,
     WalletOwnerType,
 )
-from app.services import plan_service, wallet_service
+from app.services import analytics_service, plan_service, wallet_service
 
 BOOKING_VALIDITY = timedelta(hours=24)
 DISCOUNT_REQUEST_VALIDITY = timedelta(minutes=30)
@@ -79,6 +80,8 @@ def reserve(db: Session, customer: Customer, product_id: uuid.UUID) -> Booking:
     wallet_service.post(db, wallet, WalletEntryType.BOOKING_HOLD, -discount, reference_type="booking",
                         reference_id=booking.id, note=f"{booking.booking_no} · {product.name}", user_id=customer.user_id)
     product.stock_qty -= 1
+    analytics_service.record(db, retailer.id, ShopEventType.BOOKING_START, customer_id=customer.id,
+                             meta={"product_id": str(product.id)})
     _notify(db, retailer.user_id, "booking_reserved", {"booking_no": booking.booking_no, "product": product.name},
             f"booking:{booking.id}:reserved")
     db.commit()
@@ -122,6 +125,8 @@ def confirm_purchase(db: Session, customer: Customer, booking_id: uuid.UUID) -> 
         db.commit()
         raise DomainError("This booking has expired", code="booking_expired")
     booking.status, booking.purchased_at = BookingStatus.PURCHASED, now
+    analytics_service.record(db, booking.retailer_id, ShopEventType.BOOKING_CONFIRMED, customer_id=customer.id,
+                             meta={"product_id": str(booking.product_id)})
     wallet_service.post(db, _retailer_wallet(db, booking.retailer_id), WalletEntryType.BOOKING_PURCHASED,
                         booking.discount_paise, reference_type="booking", reference_id=booking.id,
                         note=f"{booking.booking_no} · {booking.product_name}", user_id=customer.user_id)

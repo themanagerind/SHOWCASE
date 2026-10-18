@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core import clock
 from app.core.errors import DomainError, NotFound
 from app.models import Customer, Retailer, RetailerCustomer, User
-from app.models.enums import LIVE_SUBSCRIPTION_STATUSES, JoinSource
+from app.models.enums import LIVE_SUBSCRIPTION_STATUSES, JoinSource, ShopEventType
 from app.models.subscription import Subscription
 from app.services import retailer_service
 
@@ -54,6 +54,13 @@ def join(db: Session, user: User, slug: str, source: JoinSource) -> RetailerCust
     if retailer.user_id == user.id:
         raise DomainError("You cannot join your own shop", code="own_shop")
     customer = get_customer(db, user)
+    was_favourite = db.scalar(select(RetailerCustomer.is_favourite).where(
+        RetailerCustomer.retailer_id == retailer.id, RetailerCustomer.customer_id == customer.id))
+    if not was_favourite:  # new or re-added favourite (SPEC 4.9 favourite_add)
+        from app.services import analytics_service
+
+        analytics_service.record(db, retailer.id, ShopEventType.FAVOURITE_ADD, customer_id=customer.id,
+                                 meta={"source": source.value})
     db.execute(
         insert(RetailerCustomer)
         .values(retailer_id=retailer.id, customer_id=customer.id, source=source, is_favourite=True)

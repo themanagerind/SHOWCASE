@@ -1,5 +1,5 @@
 from app.db.session import SessionLocal
-from app.services import booking_service, subscription_service, wallet_service
+from app.services import analytics_service, booking_service, subscription_service, wallet_service
 from app.services.the_manager import get_the_manager_client
 from app.workers.celery_app import celery_app
 
@@ -21,3 +21,9 @@ def expire_bookings() -> dict:
     with SessionLocal() as db:
         return {"forfeited": booking_service.forfeit_expired(db),
                 "discount_requests_expired": booking_service.expire_discount_requests(db)}
+
+
+@celery_app.task(name="analytics.purge_old_events")
+def purge_old_events() -> dict:
+    with SessionLocal() as db:
+        return {"deleted": analytics_service.purge_old(db)}

@@ -14,4 +14,6 @@ celery_app.conf.beat_schedule = {
     "wallet-redemption-retry": {"task": "wallet.retry_pending_redemptions", "schedule": crontab(minute="*/5")},
     # SPEC 4.4: 24h-old RESERVED bookings are forfeited; unanswered discount requests expire.
     "bookings-expire": {"task": "bookings.expire", "schedule": crontab(minute="*/5")},
+    # SPEC 4.9: raw analytics events are kept 13 months (03:20 UTC daily).
+    "analytics-purge": {"task": "analytics.purge_old_events", "schedule": crontab(hour=3, minute=20)},
 }
