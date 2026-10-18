@@ -100,5 +100,5 @@ export function errorKey(e: unknown): MessageKey {
 
 export const fmtDate = (iso: string, lang: Lang) =>
   new Date(iso).toLocaleString(intlLocale(lang), {
-    timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
+    timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
   });

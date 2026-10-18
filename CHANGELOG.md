@@ -55,3 +55,10 @@
 - Dates use the matching Indian locale (e.g. `gu-IN`); backend accepts `en|hi|gu|mr|te|bn|kn|or` as `preferred_language`; WhatsApp share text now English.
 - Checked in Chromium at 360px for all 8 languages, logged out and as a retailer (longest header): no overflow, nav links on one line; screenshots in `docs/screenshots/languages/`.
 - Translations were written by the AI assistant — a native-speaker review is recommended before launch.
+
+## Step 5 — Subscriptions, payments and admin controls
+- Plans monthly or yearly (retailer's choice; yearly "4 months free": ₹1,599 / ₹3,199 / ₹7,999), GST-inclusive with GST shown; price order override → offer → base; free trial (default 30 days PRO) auto-starts with the shop, once per retailer.
+- Subscription status is derived from paid periods: TRIAL/ACTIVE → GRACE (default 7 days, per-retailer extension) → EXPIRED; paying early queues the next period (no days lost), so retailer plan changes apply from the next renewal; admins can change a plan immediately. Hourly Celery job + de-duplicated 3-day reminders.
+- Razorpay Orders + Checkout with payment-signature and webhook verification (idempotent, amount-checked) — switches on when keys are set; admins can record UPI/cash payments meanwhile.
+- Admin (SUPPORT / SUPER_ADMIN): retailer list/search, record payment, extend grace, price override, offers, immediate plan change, plan prices (new-only grandfathering or all), plan features, trial/grace/GST settings; every change in the append-only audit log. Admin screens at `/admin` (English), retailer "Plan" screen in all 8 languages.
+- Migration `0004`; `scripts/create_admin.py`; 42 new tests (171 total); browser e2e: trial → admin offer + payment → retailer sees offer price and queued yearly period; screenshots in `docs/screenshots/step-5/`.

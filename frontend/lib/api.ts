@@ -151,5 +151,6 @@ export type Favourite = {
   source: "LINK" | "QR" | "DISCOVERY";
 };
 
+/** ₹199 for whole rupees, ₹199.50 otherwise (never ₹199.5). */
 export const rupees = (paise: number) =>
-  `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  `₹${(paise / 100).toLocaleString("en-IN", paise % 100 === 0 ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

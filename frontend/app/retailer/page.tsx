@@ -31,6 +31,9 @@ export default function RetailerDashboard() {
           )}
         </div>
         {!live && <div className="banner warn">{t("r_noPlan")}</div>}
+        {shop.subscription_status === "TRIAL" && <div className="banner ok">{t("p_TRIAL")}</div>}
+        {shop.subscription_status === "GRACE" && <div className="banner warn">{t("p_GRACE")} — {t("p_renew")}</div>}
+        <Link className="btn secondary" href="/retailer/plan">{t("p_seePlans")}</Link>
       </div>
 
       <div className="stats">

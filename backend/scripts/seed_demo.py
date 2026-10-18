@@ -2,12 +2,17 @@
 
 Usage: .venv/bin/python -m scripts.seed_demo
 """
+from datetime import timedelta
+
 from sqlalchemy import func, select
 
 from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models import Customer, Plan, Product, Retailer, Subscription, User
-from app.models.enums import SubscriptionStatus
+from app.core import clock
+from app.core.dates import add_months
+from app.models import SubscriptionPayment
+from app.models.enums import BillingPeriod, SubscriptionPaymentStatus, SubscriptionStatus
 from app.services.retailer_service import to_point
 
 PRODUCTS = [
@@ -38,8 +43,7 @@ def main() -> None:
         )
         db.add(shop)
         db.flush()
-        plan = db.scalar(select(Plan).where(Plan.code == "BASIC"))
-        db.add(Subscription(retailer_id=shop.id, plan_id=plan.id, status=SubscriptionStatus.ACTIVE))
+        _paid_subscription(db, shop, "BASIC")
         for name, price, mrp, discount in PRODUCTS:
             db.add(Product(retailer_id=shop.id, name=name, price_paise=price, mrp_paise=mrp,
                            wallet_discount_paise=discount, stock_qty=5, activated_at=func.now()))
@@ -66,6 +70,21 @@ EXTRA_PRODUCTS = {
 }
 
 
+def _paid_subscription(db, shop: Retailer, plan_code: str) -> None:
+    """Demo shops get a paid monthly period that started 10 days ago (status is derived from paid periods)."""
+    plan = db.scalar(select(Plan).where(Plan.code == plan_code))
+    start = clock.now() - timedelta(days=10)
+    sub = Subscription(retailer_id=shop.id, plan_id=plan.id, billing_cycle=BillingPeriod.MONTHLY, status=SubscriptionStatus.ACTIVE,
+                       current_period_start=start, current_period_end=add_months(start, 1))
+    db.add(sub)
+    db.flush()
+    db.add(SubscriptionPayment(
+        subscription_id=sub.id, plan_id=plan.id, billing_cycle=BillingPeriod.MONTHLY, amount_paise=plan.base_price_paise,
+        price_source="BASE", period_start=start, period_end=add_months(start, 1), status=SubscriptionPaymentStatus.PAID,
+        gateway="manual", reference="demo-seed", paid_at=start,
+    ))
+
+
 def _extra_shops(db) -> None:
     for i, (slug, name, category, plan_code, pin, lat, lng, rating) in enumerate(EXTRA_SHOPS):
         user = User(phone=f"+91900000010{i}", name=name)
@@ -80,8 +99,7 @@ def _extra_shops(db) -> None:
         )
         db.add(shop)
         db.flush()
-        plan = db.scalar(select(Plan).where(Plan.code == plan_code))
-        db.add(Subscription(retailer_id=shop.id, plan_id=plan.id, status=SubscriptionStatus.ACTIVE))
+        _paid_subscription(db, shop, plan_code)
         for pname, price, mrp, discount in EXTRA_PRODUCTS.get(slug, []):
             db.add(Product(retailer_id=shop.id, name=pname, price_paise=price, mrp_paise=mrp,
                            wallet_discount_paise=discount, stock_qty=4, activated_at=func.now()))

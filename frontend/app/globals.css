@@ -121,3 +121,21 @@ textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); borde
 .lang-select option { color: var(--text); }
 .header nav a { white-space: nowrap; }
 @media (max-width: 400px) { .header nav { gap: 8px; font-size: 13px; } .brand { font-size: 16px; } }
+.status-pill.bad { background: #fdecea; color: var(--danger); }
+.save-chip { display: inline-block; margin-left: 6px; background: var(--green); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 11px; vertical-align: middle; }
+.plan-card.current { border: 2px solid var(--green); }
+.big-price { font-size: 26px; font-weight: 800; color: var(--navy); margin-right: 4px; }
+.features { margin: 0; padding-left: 0; list-style: none; color: var(--text); font-size: 14px; }
+.features li { margin: 2px 0; }
+main.wide { max-width: 760px; }
+.kv { width: 100%; font-size: 14px; border-collapse: collapse; }
+.kv td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+.kv td:first-child { color: var(--muted); width: 45%; }
+label.mini { font-weight: 400; font-size: 13px; color: var(--muted); }
+input[type="date"] { width: 100%; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; }
+.audit { font-size: 13px; border-bottom: 1px solid var(--line); padding: 6px 0; }
+.audit pre { white-space: pre-wrap; word-break: break-all; margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+/* Header: let the nav wrap to a second line instead of squeezing the language picker. */
+.header { flex-wrap: wrap; row-gap: 6px; }
+.header nav { flex-wrap: wrap; justify-content: flex-end; row-gap: 4px; }
+.header select.lang-select { width: auto; min-height: 0; flex: none; padding: 4px 8px; border-radius: 999px; }
