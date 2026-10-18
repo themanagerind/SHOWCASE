@@ -94,10 +94,17 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - **In-shop purchase without a prior booking** uses the same flow: at the counter the customer taps "Use wallet discount" (creates the booking) and then "I bought it" (owner decision 2026-10-18).
 - The forfeit job runs every 5 minutes.
 
+### 4.4a Wallet discount on items that are not listed online (owner decision 2026-10-18)
+
+- Retailers list only some products online; a customer may buy something else in the shop. Whether to give a wallet discount on such an item, and how much, is **the retailer's choice**.
+- Flow: the retailer enters the customer's mobile number, the discount amount and a short note (e.g. "school bag") → the customer gets a request in the app ("Sharma Electronics offers ₹100 off") → the customer taps **Confirm** (or Decline) → the amount moves from the customer's wallet to the retailer's wallet, recorded in the ledger. Without the customer's confirmation nothing is deducted.
+- A request expires after 30 minutes. If the customer has fewer points than the amount, it cannot be confirmed (the retailer is not shown the customer's balance).
+- Like product discounts, these points count towards retailer reward offers (§4.5).
+
 ### 4.5 Wallets and Points Ledger
 
 - **Customer wallet**: filled only by redeeming THE-MANAGER codes (§4.11); full code value is credited. Spent on reservations and purchases (product discount). Balance shown in the app.
-- **Retailer wallet**: receives the discount points of every completed purchase (including purchases that started as a booking).
+- **Retailer wallet**: receives the discount points of every completed purchase (including purchases that started as a booking) and of confirmed discounts on unlisted items (§4.4a).
 - 1 point = 1 paisa internally, displayed as ₹. Integers only.
 - Every movement (code redeemed, reservation deduction, purchase discount transfer, forfeit, admin reset) is an append-only ledger entry; a wallet's balance always equals the sum of its ledger entries and can never go negative.
 - **Retailer reward offers (Platform Owner / admin)**: admin can create an offer for a period (e.g. a week or month): "every retailer who collects ≥ X points in this period gets Y% of their total wallet balance as cash". At the end of the period the system lists qualifying retailers and their payout; the cash is paid by the platform owner outside the app and recorded (who, amount, date, reference). After the payout, the participating retailers' wallet balances are reset to 0 via ledger entries (history kept).
