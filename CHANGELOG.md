@@ -126,3 +126,6 @@
 - Full review in four areas (login/sessions, money/points, data exposure, frontend/config/dependencies); 18 findings fixed with regression tests (race tests use real threads and fail on the old code). Details, open items and the production checklist: `docs/SECURITY.md`.
 - Highlights: OTPs no longer logged outside dev and production refuses unsafe settings; Postgres/Redis local-only with a Redis password; atomic OTP verification; no name-fishing via shop discount requests; payment/payout race fixes; open redirect closed; CSP and security headers; input limits.
 - Frontend now has ESLint (`npm run lint`, 0 errors). Backend: 273 tests passing.
+
+## Step 9 on hold
+- Owner decision: courier integration (online orders and delivery) stays pending; SPEC §9 build order marked accordingly.

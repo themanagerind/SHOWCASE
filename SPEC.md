@@ -288,7 +288,7 @@ app/
 6. Wallets (THE-MANAGER code redemption, points ledger) + booking with points + purchase + retailer reward offers — built as 6a (wallets + code redemption), 6b (bookings), 6c (reward offers)
 7. Expired-retailer limited access behaviour
 8. Ratings, analytics events and dashboard
-9. Courier integration (abstract service + one provider)
+9. Courier integration (abstract service + one provider) — **on hold (owner decision 2026-10-18)**; online orders/delivery are not built until the owner restarts this step
 10. Lead scoring (rule-based first, then ML)
 11. PWA polish, i18n, push notifications
 
