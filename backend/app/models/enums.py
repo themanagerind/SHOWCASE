@@ -113,6 +113,8 @@ class WalletEntryType(enum.StrEnum):
     BOOKING_FORFEITED = "BOOKING_FORFEITED"    # 0 customer: record only, points vanish
     BOOKING_CANCEL_REFUND = "BOOKING_CANCEL_REFUND"  # + customer: retailer cancelled
     REWARD_RESET = "REWARD_RESET"              # - retailer: reset to 0 after a reward payout
+    SHOP_DISCOUNT = "SHOP_DISCOUNT"            # - customer: confirmed discount on an unlisted item (SPEC 4.4a)
+    SHOP_DISCOUNT_RECEIVED = "SHOP_DISCOUNT_RECEIVED"  # + retailer: same
 
 
 class RedemptionStatus(enum.StrEnum):
@@ -120,3 +122,17 @@ class RedemptionStatus(enum.StrEnum):
     CREDITED = "CREDITED"
     REJECTED = "REJECTED"    # 404 / 409 from THE-MANAGER
     ERROR = "ERROR"          # 401 / 503: integration problem, code not consumed
+
+
+class BookingStatus(enum.StrEnum):
+    RESERVED = "RESERVED"
+    PURCHASED = "PURCHASED"
+    FORFEITED = "FORFEITED"
+    CANCELLED_BY_RETAILER = "CANCELLED_BY_RETAILER"
+
+
+class DiscountRequestStatus(enum.StrEnum):
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    DECLINED = "DECLINED"
+    EXPIRED = "EXPIRED"

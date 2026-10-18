@@ -1,5 +1,5 @@
 from app.db.session import SessionLocal
-from app.services import subscription_service, wallet_service
+from app.services import booking_service, subscription_service, wallet_service
 from app.services.the_manager import get_the_manager_client
 from app.workers.celery_app import celery_app
 
@@ -14,3 +14,10 @@ def run_subscription_lifecycle() -> dict:
 def retry_pending_redemptions() -> dict:
     with SessionLocal() as db:
         return wallet_service.retry_pending(db, get_the_manager_client())
+
+
+@celery_app.task(name="bookings.expire")
+def expire_bookings() -> dict:
+    with SessionLocal() as db:
+        return {"forfeited": booking_service.forfeit_expired(db),
+                "discount_requests_expired": booking_service.expire_discount_requests(db)}
