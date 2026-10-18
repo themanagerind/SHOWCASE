@@ -5,7 +5,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Model, SoftDelete
-from app.models.enums import AdminRole
+from app.models.enums import AdminRole, SignupSource
 from app.models.types import geo_point, pg_enum
 
 
@@ -67,5 +67,14 @@ class Customer(Model, SoftDelete):
     search_radius_km: Mapped[int] = mapped_column(SmallInteger, default=5, server_default="5")
     contact_consent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Optional home address (filled from THE-MANAGER prefill or typed; SPEC 4.12). No email is stored.
+    society_name: Mapped[str | None] = mapped_column(String(120))
+    address_line: Mapped[str | None] = mapped_column(String(200))
+    flat_number: Mapped[str | None] = mapped_column(String(20))
+    floor: Mapped[str | None] = mapped_column(String(10))
+    state: Mapped[str | None] = mapped_column(String(60))
+    signup_source: Mapped[SignupSource] = mapped_column(
+        pg_enum(SignupSource, "signup_source"), default=SignupSource.DIRECT, server_default="DIRECT"
+    )
 
     user: Mapped[User] = relationship(back_populates="customer")

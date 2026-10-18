@@ -35,6 +35,10 @@ def update_profile(db: Session, user: User, customer: Customer, data: dict) -> N
         customer.pincode = data.pop("pincode")
     if "search_radius_km" in data:
         customer.search_radius_km = data.pop("search_radius_km")
+    for field in ("society_name", "address_line", "flat_number", "floor", "state"):
+        if field in data:
+            value = (data.pop(field) or "").strip()
+            setattr(customer, field, value or None)
     if "contact_consent" in data:
         consent = data.pop("contact_consent")
         if consent != customer.contact_consent:

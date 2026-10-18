@@ -180,13 +180,18 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Booking uses points only (§4.4); retailer points are used for reward offers (§4.5).
 - Customer with fewer points than the product's discount: the purchase is still allowed, but with NO discount (full price, no points deducted, no partial use). Any concession the retailer gives in that case is their own decision outside the app and is not recorded in wallets. (Reservations still require the full discount in points, §4.4.)
 
-### 4.12 THE-MANAGER → Showcase resident signup prefill (design APPROVED 2026-10-18 — not built yet)
+### 4.12 THE-MANAGER → Showcase resident signup prefill (design APPROVED 2026-10-18 — Showcase side built)
 
 - THE-MANAGER's Resident dashboard gets a "Shop Now" button that opens Showcase with a one-time prefill token. **No SSO**: the resident still verifies their mobile with OTP on Showcase; the THE-MANAGER session is never shared. Customers arriving directly keep the normal signup.
 - Prefill only saves typing: name, mobile, email (optional), society address (name, city, state, pincode), flat number + floor. The resident reviews/edits before saving; nothing is auto-submitted.
 - The token is verified by the Showcase BACKEND with THE-MANAGER using the shared store key, is short-lived and single-use (replay-safe).
 - Approved decisions: opaque random token (no data in the URL) redeemed server-to-server; name/address/flat revealed only after OTP for the same mobile; token valid 5 minutes, single use; landing URL `/welcome?prefill=`; address/flat/society saved to the profile only if the resident saves the form; **email is not stored** (no use for it yet, DPDP minimal data).
 - Build order: after step 5 (owner decision). Contract for THE-MANAGER: `docs/integrations/the-manager-prefill.md`.
+- Build details (owner decisions 2026-10-18):
+  - `signup_source` (DIRECT | THE_MANAGER) is set to THE_MANAGER only for an account created through the prefill flow; an existing customer keeps their first source.
+  - Society pincode/city fill the customer's pincode/city (used by discovery) only when those are empty; after saving, the resident lands on Discover (nearby shops).
+  - `/prefill/start` is limited to 20 attempts per hour per IP (token guessing). `/welcome` without a token goes to the normal login.
+  - A resident can always sign up directly with OTP; the account is identified by the mobile number, so a later "Shop Now" opens the same account and only fills empty fields.
 
 ## 5. Subscription System (Admin-controlled)
 

@@ -136,3 +136,8 @@ class DiscountRequestStatus(enum.StrEnum):
     CONFIRMED = "CONFIRMED"
     DECLINED = "DECLINED"
     EXPIRED = "EXPIRED"
+
+
+class SignupSource(enum.StrEnum):
+    DIRECT = "DIRECT"
+    THE_MANAGER = "THE_MANAGER"  # arrived through the resident prefill link (SPEC 4.12)

@@ -21,6 +21,12 @@ class CustomerProfileOut(BaseModel):
     consent_at: datetime | None
     search_radius_km: int
     profile_complete: bool
+    society_name: str | None = None
+    address_line: str | None = None
+    flat_number: str | None = None
+    floor: str | None = None
+    state: str | None = None
+    signup_source: str = "DIRECT"
 
 
 class CustomerProfileUpdate(BaseModel):
@@ -30,6 +36,12 @@ class CustomerProfileUpdate(BaseModel):
     city: str | None = Field(default=None, min_length=2, max_length=80)
     contact_consent: bool | None = None
     search_radius_km: Literal[2, 5, 10, 25, 50] | None = None
+    # Optional home address (SPEC 4.12); empty string clears a field.
+    society_name: str | None = Field(default=None, max_length=120)
+    address_line: str | None = Field(default=None, max_length=200)
+    flat_number: str | None = Field(default=None, max_length=20)
+    floor: str | None = Field(default=None, max_length=10)
+    state: str | None = Field(default=None, max_length=60)
 
 
 class JoinIn(BaseModel):

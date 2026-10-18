@@ -25,6 +25,8 @@ def _profile_out(user: User, db: Session) -> CustomerProfileOut:
         id=c.id, phone=user.phone, name=user.name, preferred_language=user.preferred_language, pincode=c.pincode,
         city=c.city, contact_consent=c.contact_consent, consent_at=c.consent_at, search_radius_km=c.search_radius_km,
         profile_complete=customer_service.is_profile_complete(user, c),
+        society_name=c.society_name, address_line=c.address_line, flat_number=c.flat_number, floor=c.floor,
+        state=c.state, signup_source=c.signup_source.value,
     )
 
 

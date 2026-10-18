@@ -1,6 +1,6 @@
 # THE-MANAGER → Showcase: Resident Signup Prefill — proposed contract
 
-Status: **design APPROVED by the owner (2026-10-18), not built yet.** Showcase builds its side after step 5; THE-MANAGER can build its side from this document now.
+Status: **design APPROVED by the owner (2026-10-18). Showcase side built;** THE-MANAGER builds its side from this document. Until their redeem API is live, Showcase falls back to the normal signup.
 Agreed principles (from THE-MANAGER): no SSO, OTP on Showcase is mandatory, prefill is only to save typing,
 token verified server-to-server with the shared secret, short-lived, single-use, editable before saving.
 
