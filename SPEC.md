@@ -126,6 +126,12 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 ### 4.7 Ratings
 
 - Customers can rate retailers (1-5 + optional comment), only after a completed purchase (booking PURCHASED or delivered order). One review per transaction. Retailer can view, and flag abusive reviews to admin.
+- Owner decisions (2026-10-18):
+  - A confirmed wallet discount on an unlisted item (§4.4a) is also a purchase and can be rated.
+  - A purchase can be rated within 30 days; the customer may change their rating/comment within the same 30 days.
+  - Public name on a review: first name + initial of the last name ("Ravi V."); the phone number is never shown.
+  - Retailer flags an abusive review with a reason; an admin (any role) either HIDES it (removed from the page and from the average) or KEEPS it. The retailer cannot hide reviews and cannot reply (reply may come later).
+  - `rating_avg` / `rating_count` count only visible reviews and drive discovery ranking.
 
 ### 4.8 Location-based Discovery
 
@@ -153,6 +159,12 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 
 - Event tracking table `shop_events (id, retailer_id, customer_id nullable, anon_id, event_type[shop_view, product_view, favourite_add, whatsapp_click, call_click, booking_start, booking_confirmed], meta JSONB, lat, lng, created_at)`.
 - Dashboard: daily/weekly/monthly visitors, unique vs repeat, top products, WhatsApp/call clicks, booking conversion.
+- Owner decisions (2026-10-18):
+  - favourite_add, booking_start (reservation) and booking_confirmed ("I bought it") are recorded by the backend itself; shop_view, product_view, whatsapp_click and call_click come from the browser with a random per-browser id (`anon_id`), or the customer id when logged in.
+  - The retailer's own visits are not counted; the same browser viewing the same shop within 30 minutes counts once; per-browser rate limit against spam.
+  - Location is NOT stored for now (lat/lng stay empty; DPDP minimal data).
+  - Full dashboard for plans with `analytics` (PRO, PREMIUM): last 7 / 30 / 90 days — daily visitors chart, new vs repeat visitors, top viewed products, WhatsApp / call clicks, booking conversion (started → bought). BASIC sees only "X people viewed your shop in the last 7 days" with an upgrade note.
+  - Raw events are kept 13 months, then deleted automatically.
 
 ### 4.10 Lead Generation (ML, Premium)
 

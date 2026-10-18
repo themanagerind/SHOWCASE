@@ -79,6 +79,12 @@ class Review(Model):
     source_id: Mapped[uuid.UUID] = mapped_column()
     is_flagged: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     flag_reason: Mapped[str | None] = mapped_column(Text)
+    # Moderation (SPEC 4.7): retailer flags -> admin hides (out of page and average) or keeps.
+    flagged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_hidden: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_by_user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    purchased_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # starts the 30-day edit window
 
 
 class ShopEvent(Model):

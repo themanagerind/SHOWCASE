@@ -68,7 +68,8 @@ class ShipmentStatus(enum.StrEnum):
 class ReviewSource(enum.StrEnum):
     BOOKING = "BOOKING"
     ORDER = "ORDER"
-    CREDIT_USE = "CREDIT_USE"
+    CREDIT_USE = "CREDIT_USE"  # legacy (advance/credit flow was dropped in 0002)
+    SHOP_DISCOUNT = "SHOP_DISCOUNT"  # confirmed discount on an unlisted item (SPEC 4.4a / 4.7)
 
 
 class ShopEventType(enum.StrEnum):
