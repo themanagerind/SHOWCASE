@@ -165,3 +165,15 @@ h1, h2, h3, h4,
 .amount { font-weight: 700; white-space: nowrap; }
 .amount.plus { color: var(--green); }
 .amount.minus { color: var(--danger); }
+
+/* Bookings (step 6b) */
+.btn.small { padding: 8px 10px; font-size: 13px; width: 100%; margin-top: 8px; }
+.product .banner { margin-top: 6px; padding: 6px 8px; }
+.booking-no { font-family: ui-monospace, monospace; font-size: 22px; font-weight: 800; letter-spacing: 2px; color: var(--navy); }
+.countdown { font-weight: 700; color: var(--green); }
+.status { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 8px; background: #eef0f3; color: var(--navy); }
+.status.RESERVED, .status.PENDING { background: #eef3fb; }
+.status.PURCHASED, .status.CONFIRMED { background: var(--green-soft); color: #11663a; }
+.status.FORFEITED, .status.EXPIRED, .status.DECLINED { background: #fdecec; color: #8a1f1f; }
+.status.CANCELLED_BY_RETAILER { background: #fff6e5; color: #7a4a00; }
+.prow .side { text-align: right; max-width: 40%; flex-shrink: 0; }

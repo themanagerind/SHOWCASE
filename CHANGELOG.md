@@ -77,3 +77,12 @@
 - Code redemption per the agreed contract: the attempt is saved before calling THE-MANAGER; lost responses are retried with the same `request_id` (3 immediate tries + a 5-minute Celery job); 404/409 rejected, 401/503 reported as integration errors; a code can be credited at most once in Showcase; the raw code is not kept; 10 attempts/hour per customer.
 - `scripts/mock_the_manager.py` (dev stand-in with demo codes) and the real HTTP client tested against it, incl. replay and float rejection.
 - Screens: customer Wallet (balance, add code, history) in all 8 languages; wallet points tile on the retailer dashboard. Migration `0006`; 17 new tests (198 total).
+
+## Step 6b — Bookings with points + shop discount on unlisted items
+- Customer reserves a product with wallet points (the product's wallet discount is held, 1 unit of stock is held); multiple bookings allowed, including the same product.
+- Only the customer can complete a booking by tapping "I bought it" — the retailer cannot; points then go to the retailer's wallet once (double tap is harmless), even if the shop's plan has expired since.
+- 24 hours (exact boundary) without "I bought it" → FORFEITED: points are gone, stock is released, record kept; Celery job every 5 minutes (idempotent).
+- Retailer can cancel an open booking with a reason (e.g. out of stock): points return to the customer once and stock is released.
+- SPEC §4.4a: retailer can send a wallet discount for an item that is not listed online (customer's phone + amount + item); points move only after the customer confirms in the app within 30 minutes; decline/expiry moves nothing; the retailer never sees the customer's balance.
+- Migration `0007` (bookings, shop_discount_requests, two new ledger types); new pages `/bookings` (booking number, countdown, "I bought it", discount requests) and retailer `Bookings` tab; text in all 8 languages.
+- 22 new backend tests (220 total); 360px browser run of the full flow with screenshots in `docs/screenshots/step6b/`.

@@ -8,6 +8,7 @@ const TABS = [
   { href: "/retailer", key: "r_dashboard" },
   { href: "/retailer/plan", key: "r_plan_tab" },
   { href: "/retailer/products", key: "r_products" },
+  { href: "/retailer/bookings", key: "rb_tab" },
   { href: "/retailer/share", key: "r_share" },
   { href: "/retailer/customers", key: "r_customers" },
 ] as const;

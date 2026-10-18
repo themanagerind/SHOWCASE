@@ -1,11 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { rupees, type Storefront } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { api, isLoggedIn, rupees, type Product, type Storefront } from "@/lib/api";
+import { bookingErrorKey, fill } from "@/lib/bookings";
 import { useI18n } from "@/lib/i18n";
 
 export default function ShopView({ data, slug, source }: { data: Storefront | null; slug: string; source: "LINK" | "QR" }) {
   const { t, day } = useI18n();
+  const router = useRouter();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<{ id: string; text: string } | null>(null);
+
+  async function reserve(p: Product) {
+    if (!isLoggedIn()) { router.push(`/login?next=/${slug}`); return; }
+    if (!confirm(fill(t("b_confirmReserve"), { name: p.name, points: rupees(p.wallet_discount_paise) }))) return;
+    setBusy(p.id);
+    setErr(null);
+    try {
+      await api("/bookings", { method: "POST", body: JSON.stringify({ product_id: p.id }) });
+      router.push("/bookings?new=1");
+    } catch (e) {
+      setErr({ id: p.id, text: t(bookingErrorKey(e)) });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (!data) {
     return (
       <main>
@@ -68,6 +90,17 @@ export default function ShopView({ data, slug, source }: { data: Storefront | nu
                   {p.mrp_paise && p.mrp_paise > p.price_paise && <span className="mrp">{rupees(p.mrp_paise)}</span>}
                 </div>
                 <span className="badge">{t("walletDiscount")}: {rupees(p.wallet_discount_paise)}</span>
+                {p.stock_qty > 0 ? (
+                  <button className="btn small" disabled={busy === p.id} onClick={() => reserve(p)}>{t("b_reserve")}</button>
+                ) : (
+                  <span className="muted note">{t("outOfStock")}</span>
+                )}
+                {err?.id === p.id && (
+                  <div className="banner warn note">
+                    {err.text}{" "}
+                    {err.text === t("b_errPoints") && <Link href="/wallet">{t("w_nav")} →</Link>}
+                  </div>
+                )}
               </div>
             </div>
           ))}
