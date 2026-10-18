@@ -141,7 +141,10 @@ def standings(db: Session, offer: RewardOffer) -> list[Standing]:
 
 def record_payout(db: Session, user: User, offer_id: uuid.UUID, retailer_id: uuid.UUID, paid_on: date,
                   reference: str) -> RewardPayout:
-    offer = get_offer(db, offer_id)
+    # Lock the offer: a parallel cancel_offer must either see this payout or block it (never both happen).
+    offer = db.scalar(select(RewardOffer).where(RewardOffer.id == offer_id).with_for_update())
+    if offer is None:
+        raise NotFound("Offer not found")
     if offer.cancelled_at is not None:
         raise DomainError("This offer was cancelled", code="offer_cancelled")
     if clock.now() < offer.ends_at:

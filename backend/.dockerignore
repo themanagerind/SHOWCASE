@@ -2,3 +2,7 @@
 __pycache__
 .pytest_cache
 .env
+tests
+scripts/mock_the_manager.py
+dump.rdb
+*.rdb

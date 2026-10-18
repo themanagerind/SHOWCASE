@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core import clock
 from app.core.dates import add_months
-from app.core.errors import DomainError, NotFound
+from app.core.errors import Conflict, DomainError, Forbidden, NotFound
 from app.models import (
     AdminUser,
     Notification,
@@ -30,6 +30,7 @@ from app.models import (
 )
 from app.models.enums import (
     LIVE_SUBSCRIPTION_STATUSES,
+    AdminRole,
     BillingPeriod,
     NotificationChannel,
     OfferType,
@@ -306,13 +307,19 @@ def create_checkout(db: Session, retailer: Retailer, plan_code: str, cycle: Bill
     return payment, q
 
 
+def _lock_payment(db: Session, where) -> SubscriptionPayment | None:
+    return db.scalar(select(SubscriptionPayment).where(where).with_for_update().execution_options(populate_existing=True))
+
+
 def confirm_checkout(db: Session, retailer: Retailer, payment_id: uuid.UUID, gateway_payment_id: str,
                      signature: str, gateway: PaymentGateway | None) -> SubscriptionPayment:
     if gateway is None:
         raise DomainError("Online payment is not available yet", code="gateway_not_configured")
-    payment = db.get(SubscriptionPayment, payment_id, with_for_update=True)
-    sub = db.get(Subscription, payment.subscription_id) if payment else None
-    if payment is None or sub is None or sub.retailer_id != retailer.id:
+    # Lock order everywhere: subscription, then payment. Two payments settling at once must not both read
+    # the same "latest period end" and get overlapping periods.
+    sub = get_subscription(db, retailer.id, lock=True)
+    payment = _lock_payment(db, SubscriptionPayment.id == payment_id)
+    if payment is None or sub is None or payment.subscription_id != sub.id:
         raise NotFound("Payment not found")
     if not gateway.verify_payment(payment.gateway_order_id or "", gateway_payment_id, signature):
         raise DomainError("Payment could not be verified", code="bad_signature")
@@ -329,11 +336,11 @@ def handle_gateway_event(db: Session, event: dict) -> bool:
         return False
     entity = event.get("payload", {}).get("payment", {}).get("entity", {})
     order_id, gateway_payment_id = entity.get("order_id"), entity.get("id")
-    payment = db.scalar(
-        select(SubscriptionPayment).where(SubscriptionPayment.gateway_order_id == order_id).with_for_update()
-    ) if order_id else None
-    if payment is None:
+    found = db.scalar(select(SubscriptionPayment).where(SubscriptionPayment.gateway_order_id == order_id)) if order_id else None
+    if found is None:
         return False
+    db.scalar(select(Subscription).where(Subscription.id == found.subscription_id).with_for_update())  # same lock order
+    payment = _lock_payment(db, SubscriptionPayment.id == found.id)
     if entity.get("amount") is not None and int(entity["amount"]) != payment.amount_paise:
         raise DomainError("Paid amount does not match the order", code="amount_mismatch")
     if payment.status != SubscriptionPaymentStatus.PAID:
@@ -354,7 +361,14 @@ def record_manual_payment(db: Session, admin: AdminUser, retailer: Retailer, pla
     amount = q.amount_paise if amount_paise is None else amount_paise
     if amount < 0:
         raise DomainError("Amount cannot be negative", code="invalid_amount")
-    sub = _ensure_subscription(db, retailer, plan, cycle)
+    if amount != q.amount_paise and admin.role != AdminRole.SUPER_ADMIN:
+        # A different amount is effectively a price change, which is SUPER_ADMIN-only (SPEC 5).
+        raise Forbidden("Only a super admin can record a different amount", code="super_admin_only")
+    reference = reference.strip()
+    sub = _ensure_subscription(db, retailer, plan, cycle)  # locks the subscription: serialises payments
+    if db.scalar(select(SubscriptionPayment.id).where(SubscriptionPayment.gateway == "manual",
+                                                      SubscriptionPayment.reference == reference)):
+        raise Conflict("A payment with this reference is already recorded", code="duplicate_reference")
     payment = SubscriptionPayment(
         subscription_id=sub.id, plan_id=plan.id, billing_cycle=cycle, amount_paise=amount,
         gst_paise=gst_part(db, amount), price_source=q.source if amount_paise is None else "ADMIN",

@@ -5,7 +5,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports: ["5432:5432"]
+    # Only reachable from this machine (Docker's published ports bypass host firewalls).
+    ports: ["127.0.0.1:5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
@@ -14,15 +15,19 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    # Redis holds OTPs and rate limits: password required, and only reachable from this machine.
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    ports: ["127.0.0.1:6379:6379"]
 
   api:
     build: ./backend
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379/0
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+    # Behind a reverse proxy, trust X-Forwarded-For ONLY from the proxy (FORWARDED_ALLOW_IPS = its IP/CIDR);
+    # otherwise every user shares the proxy IP for rate limits, or (with "*") the header can be forged.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=$${FORWARDED_ALLOW_IPS:-127.0.0.1}"
     ports: ["8001:8000"]  # 8000 is left free for THE-MANAGER backend on the same machine
     depends_on:
       db: {condition: service_healthy}
@@ -43,7 +48,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     command: celery -A app.workers.celery_app worker -l info
     depends_on: [db, redis]
 
@@ -51,7 +56,7 @@ services:
     build: ./backend
     env_file: .env
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     command: celery -A app.workers.celery_app beat -l info
     depends_on: [redis]
 

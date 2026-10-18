@@ -185,3 +185,22 @@ def test_inactive_admin_is_rejected(client, login, db):
     admin.is_active = False
     db.flush()
     assert client.get("/api/v1/admin/retailers", headers=auth(sa)).status_code == 403
+
+
+def test_manual_payment_reference_once_and_support_cannot_change_amount(client, login, db):
+    """Security audit: a retried 'Mark paid' must not give two periods; a custom amount is SUPER_ADMIN only."""
+    _, shop = create_shop(client, login, db=db, plan=None)
+    rid = shop["id"]
+    support = make_admin_token(db, login, "9000000001", "SUPPORT")
+    body = {"plan_code": "BASIC", "billing_cycle": "MONTHLY", "reference": "UTR123456"}
+    assert client.post(f"/api/v1/admin/retailers/{rid}/payments", json=body, headers=auth(support)).status_code == 201
+    r = client.post(f"/api/v1/admin/retailers/{rid}/payments", json={**body, "reference": " UTR123456 "},
+                    headers=auth(support))
+    assert r.status_code == 409 and r.json()["error"] == "duplicate_reference"
+    r = client.post(f"/api/v1/admin/retailers/{rid}/payments", json={**body, "reference": "UTR999", "amount_paise": 0},
+                    headers=auth(support))
+    assert r.status_code == 403 and r.json()["error"] == "super_admin_only"
+    sa = make_admin_token(db, login, "9000000002", "SUPER_ADMIN")
+    r = client.post(f"/api/v1/admin/retailers/{rid}/payments", json={**body, "reference": "UTR999", "amount_paise": 0},
+                    headers=auth(sa))
+    assert r.status_code == 201

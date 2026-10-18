@@ -16,4 +16,10 @@ class ConsoleSmsSender:
 
 
 def get_sms_sender() -> SmsSender:
-    return ConsoleSmsSender()
+    from app.core.config import get_settings
+
+    s = get_settings()
+    if s.sms_provider == "console" and s.env in ("dev", "test"):
+        return ConsoleSmsSender()
+    # Settings already refuse "console" in prod; no real provider is wired yet (needed before launch).
+    raise RuntimeError(f"SMS provider {s.sms_provider!r} is not available")

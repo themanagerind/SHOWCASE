@@ -44,7 +44,7 @@ def request_otp(body: OtpRequestIn, request: Request, otp: OtpService = Depends(
 def verify_otp(
     body: OtpVerifyIn, request: Request, otp: OtpService = Depends(get_otp_service), db: Session = Depends(get_db)
 ):
-    phone = otp.verify(body.phone, body.code)
+    phone = otp.verify(body.phone, body.code, request.client.host if request.client else "unknown")
     return _token_out(auth_service.login(db, phone, request.headers.get("user-agent")))
 
 

@@ -180,3 +180,26 @@ def test_http_client_rejects_float_amounts(monkeypatch):
     _wire(monkeypatch, bad)
     with pytest.raises(TransientError):
         HttpTheManagerClient("http://tm", "k").verify("X", "r")
+
+
+def test_lost_response_then_outage_keeps_redemption_pending_until_credited(db):
+    """Security audit: timeout (code consumed remotely) followed by 503 must not end as ERROR (money lost)."""
+    c = make_customer(db)
+    tm = FakeTheManager()
+    tm.lose_response_next = 1  # attempt 1: THE-MANAGER uses the code, response is lost
+
+    real_verify = tm.verify
+
+    def flaky(code, request_id):
+        if len(tm.calls) == 1:  # attempt 2 of the same request: integration outage
+            tm.calls.append((code, request_id))
+            return VerifyResult("unavailable")
+        return real_verify(code, request_id)
+
+    tm.verify = flaky
+    out = ws.redeem_code(db, c, "AB3DEFGH", tm)
+    assert out.status == RedemptionStatus.PENDING and balance(db, c) == 0
+    tm.verify = real_verify  # outage over: the job retries with the same request_id and THE-MANAGER replays 200
+    ws.retry_pending(db, tm, older_than=timedelta(0))
+    assert balance(db, c) == 150000
+    assert len({rid for _, rid in tm.calls}) == 1

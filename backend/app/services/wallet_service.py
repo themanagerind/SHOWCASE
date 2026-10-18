@@ -98,6 +98,10 @@ def _finalise(db: Session, redemption_id: uuid.UUID, client: TheManagerClient, t
     db.commit()  # keep the attempt count even if we give up for now
     if result is None:
         return r  # still PENDING: the retry job will try again with the same request_id
+    if result.outcome in ("unauthorized", "unavailable") and r.attempts > 1:
+        # An earlier attempt may have reached THE-MANAGER and used the code (lost response). Giving up now
+        # would leave the customer's money spent with no points, so keep retrying the same request_id.
+        return r
     r = db.scalar(select(WalletRedemption).where(WalletRedemption.id == redemption_id).with_for_update()
                   .execution_options(populate_existing=True))
     if r.status != RedemptionStatus.PENDING:
