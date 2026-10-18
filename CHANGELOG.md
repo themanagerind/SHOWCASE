@@ -115,3 +115,9 @@
 - Shop page shows the average, count and latest reviews; names appear as "Ravi V.", never the phone number. `rating_avg` / `rating_count` (used by discovery ranking) count only visible reviews.
 - Retailer `Reviews` tab: all reviews, "Report abusive review" with a reason. Admin `Reviews` page: flagged queue, Hide (out of the page and the average) or Keep; any admin role may moderate.
 - Migration `0010`; 4 new backend tests (248 total); 360px browser run with screenshots in `docs/screenshots/step8a/`.
+
+## Step 8b — Shop analytics (Insights)
+- Shop page sends shop_view (once per browser per 30 min), product_view (when half a product card is on screen), WhatsApp and call clicks; favourite_add, booking_start and booking_confirmed are recorded by the backend itself. Visitor = logged-in customer or a random per-browser id; the retailer's own visits are ignored; no location is stored; per-visitor rate limit; only live shops are tracked.
+- Retailer `Insights` tab (PRO / PREMIUM): 7 / 30 / 90 days — visitors, shop views, WhatsApp and call clicks, favourites, booking conversion, a visitors-per-day bar chart with hover/tap details and a table view, new vs returning visitors, bookings, most seen products. BASIC sees "X people viewed your shop in the last 7 days" with an upgrade note; an expired plan shows the renew screen.
+- Raw events older than 13 months are deleted by a daily job.
+- 4 new backend tests (252 total); 360px browser run (real visitor events + 30 days of sample data in the dev database only) with screenshots in `docs/screenshots/step8b/`.

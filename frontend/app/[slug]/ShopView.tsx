@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, isLoggedIn, rupees, type Product, type Storefront } from "@/lib/api";
 import { bookingErrorKey, fill } from "@/lib/bookings";
 import ShopReviews from "@/components/ShopReviews";
 import { useI18n } from "@/lib/i18n";
+import { track } from "@/lib/track";
 
 export default function ShopView({ data, slug, source }: { data: Storefront | null; slug: string; source: "LINK" | "QR" }) {
   const { t, day } = useI18n();
@@ -28,6 +29,19 @@ export default function ShopView({ data, slug, source }: { data: Storefront | nu
       setBusy(null);
     }
   }
+
+  // Analytics (SPEC 4.9): one shop_view per visit; a product counts as "seen" when half its card is on screen.
+  const seen = useRef(new Set<string>());
+  useEffect(() => {
+    if (!data) return;
+    track(slug, "shop_view");
+    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+      const id = (e.target as HTMLElement).dataset.pid;
+      if (e.isIntersecting && id && !seen.current.has(id)) { seen.current.add(id); track(slug, "product_view", id); }
+    }), { threshold: 0.5 });
+    document.querySelectorAll<HTMLElement>(".product[data-pid]").forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [data, slug]);
 
   if (!data) {
     return (
@@ -54,11 +68,11 @@ export default function ShopView({ data, slug, source }: { data: Storefront | nu
         <Link className="btn" href={joinHref}>{t("joinShop")}</Link>
         <div className="row">
           {shop.whatsapp_url && (
-            <a className="btn wa" href={shop.whatsapp_url} target="_blank" rel="noopener noreferrer">
+            <a className="btn wa" href={shop.whatsapp_url} target="_blank" rel="noopener noreferrer" onClick={() => track(slug, "whatsapp_click")}>
               {t("chatWhatsApp")}
             </a>
           )}
-          {shop.phone && <a className="btn secondary" href={`tel:${shop.phone}`}>{t("call")}</a>}
+          {shop.phone && <a className="btn secondary" href={`tel:${shop.phone}`} onClick={() => track(slug, "call_click")}>{t("call")}</a>}
         </div>
         <div>
           <div className="muted">{t("address")}</div>
@@ -82,7 +96,7 @@ export default function ShopView({ data, slug, source }: { data: Storefront | nu
       ) : (
         <div className="products">
           {products.map((p) => (
-            <div className="product" key={p.id}>
+            <div className="product" key={p.id} data-pid={p.id}>
               {p.photos[0] ? <img src={p.photos[0]} alt={p.name} loading="lazy" /> : <div className="ph" />}
               <div className="body">
                 <div className="name">{p.name}</div>

@@ -198,3 +198,19 @@ h1, h2, h3, h4,
 textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; resize: vertical; }
 .review { border-left: 3px solid var(--green); }
 .rating-big { font-size: 28px; font-weight: 800; color: var(--navy); margin-right: 6px; vertical-align: middle; }
+
+/* Insights (step 8b): one series, brand green, recessive axes, 2px gaps, 4px rounded data-ends */
+.teaser { font-size: 18px; font-weight: 600; color: var(--navy); }
+.chart-tip { min-height: 20px; }
+.bars { display: flex; gap: 6px; height: 160px; }
+.bars-axis { display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; color: var(--muted); text-align: right; min-width: 18px; }
+.bars-plot { flex: 1; display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 2px; align-items: end; border-bottom: 1px solid var(--line); background: linear-gradient(var(--line), var(--line)) top / 100% 1px no-repeat; }
+.bar-slot { height: 100%; display: flex; align-items: flex-end; justify-content: center; background: none; border: 0; padding: 0; cursor: pointer; }
+.bar-slot .bar { display: block; width: 100%; max-width: 24px; min-height: 2px; background: var(--green); border-radius: 4px 4px 0 0; }
+.bar-slot.on .bar { background: #157a45; }
+.bars-x { display: flex; justify-content: space-between; padding-left: 24px; }
+.split-row { display: flex; justify-content: space-between; gap: 12px; }
+.bar-h { height: 6px; background: #eef0f3; border-radius: 999px; overflow: hidden; margin-top: 4px; }
+.bar-h span { display: block; height: 100%; background: var(--green); border-radius: 999px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+.data-table th, .data-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
