@@ -62,3 +62,6 @@
 - Razorpay Orders + Checkout with payment-signature and webhook verification (idempotent, amount-checked) — switches on when keys are set; admins can record UPI/cash payments meanwhile.
 - Admin (SUPPORT / SUPER_ADMIN): retailer list/search, record payment, extend grace, price override, offers, immediate plan change, plan prices (new-only grandfathering or all), plan features, trial/grace/GST settings; every change in the append-only audit log. Admin screens at `/admin` (English), retailer "Plan" screen in all 8 languages.
 - Migration `0004`; `scripts/create_admin.py`; 42 new tests (171 total); browser e2e: trial → admin offer + payment → retailer sees offer price and queued yearly period; screenshots in `docs/screenshots/step-5/`.
+
+## UI convention — capital headings everywhere
+- One universal setting (`--heading-case` in `frontend/app/globals.css`) puts every heading (h1–h4), header link, dashboard tab (`.rnav`) and toggle tab (`.tabs`) in CAPITALS; new screens get it automatically, custom headings use `ui-heading`. Recorded in SPEC §8 as a rule for all future screens. Indic scripts are unaffected (no capitals).

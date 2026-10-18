@@ -233,6 +233,7 @@ app/
 
 - Mobile-first, fast on low-end Android phones and 3G/4G; image compression and lazy loading; offline-friendly caching of browsed pages (PWA).
 - UI language: **English by default** (owner decision 2026-10-18). The user can switch to Hindi (hi), Gujarati (gu), Marathi (mr), Telugu (te), Bengali/Bangla (bn), Kannada (kn) or Odia (or); the choice is remembered on the device and saved in the profile. Every language must have every UI string (enforced at build time); more languages (e.g. Tamil) can be added the same way.
+- **UI conventions (owner decision 2026-10-18), apply to every current and future screen/dashboard:** headings, navigation links and tabs are shown in CAPITALS. This is one universal setting (`--heading-case` in `frontend/app/globals.css`); new screens must use h1–h4, the shared header/RetailerNav/AdminNav/`.tabs`, or the `ui-heading` class instead of styling headings themselves. Theme: navy blue + white with green accents.
 - Security: OTP rate limiting, input validation, signed media URLs, no secrets in code, audit logs for money-related state changes.
 - Money in paise (integers), all timestamps in UTC, display in IST.
 - Dockerized setup (docker-compose: api, postgres+postgis, redis, celery worker/beat), env-based config, OpenAPI docs.

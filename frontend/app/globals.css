@@ -15,6 +15,11 @@
   --wa: var(--green);
   --danger: #b42318;
   --radius: 12px;
+
+  /* UNIVERSAL HEADING STYLE (owner decision, SPEC §8 "UI conventions").
+     Every heading, nav link and tab on every screen/dashboard uses this — change it here only. */
+  --heading-case: uppercase;
+  --heading-tracking: 0.03em;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -139,3 +144,17 @@ input[type="date"] { width: 100%; min-height: 44px; padding: 8px 10px; border: 1
 .header { flex-wrap: wrap; row-gap: 6px; }
 .header nav { flex-wrap: wrap; justify-content: flex-end; row-gap: 4px; }
 .header select.lang-select { width: auto; min-height: 0; flex: none; padding: 4px 8px; border-radius: 999px; }
+
+/* Universal heading rule: applies automatically to all current and future dashboards.
+   New screens get it for free by using h1/h2/h3, the shared header, RetailerNav/AdminNav (.rnav) or .tabs;
+   any other custom heading just adds className="ui-heading". (Indic scripts have no capitals; they are unaffected.) */
+h1, h2, h3, h4,
+.brand,
+.header nav a,
+.rnav a,
+.tabs button,
+.ui-heading {
+  text-transform: var(--heading-case);
+  letter-spacing: var(--heading-tracking);
+}
+@media (max-width: 400px) { .header nav { gap: 7px; font-size: 12px; } .header nav a { letter-spacing: 0.01em; } }
