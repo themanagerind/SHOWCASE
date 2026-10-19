@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -7,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    env: str = "dev"  # dev | test | prod
+    env: Literal["dev", "test", "prod"] = "dev"  # anything else ("Prod", "production") refuses to start
     database_url: str = "postgresql+psycopg://showcase:showcase@localhost:5432/showcase"
     redis_url: str = "redis://localhost:6379/0"
 

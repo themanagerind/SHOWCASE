@@ -149,6 +149,8 @@ def record_payout(db: Session, user: User, offer_id: uuid.UUID, retailer_id: uui
         raise DomainError("This offer was cancelled", code="offer_cancelled")
     if clock.now() < offer.ends_at:
         raise DomainError("The offer has not ended yet", code="offer_not_ended")
+    if db.get(Retailer, retailer_id).user_id == user.id:
+        raise Forbidden("Admins cannot record a payout to their own shop", code="own_shop")
     if db.scalar(select(RewardParticipant.id).where(RewardParticipant.offer_id == offer.id,
                                                     RewardParticipant.retailer_id == retailer_id)) is None:
         raise DomainError("This retailer did not join the offer", code="not_participant")

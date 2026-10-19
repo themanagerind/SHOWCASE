@@ -10,7 +10,9 @@ from app.models import Retailer, User
 from app.services import plan_service
 
 SLUG_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,58})[a-z0-9]$")
+# Every top-level frontend route must be here, or a shop link would open that page (tests check frontend/app).
 RESERVED_SLUGS = {
+    "welcome", "retailer", "favourites", "profile", "offline", "manifest", "sw", "icon", "icons", "events",
     "me", "api", "admin", "app", "login", "logout", "signup", "auth", "settings", "shops", "shop", "retailers",
     "discover", "search", "credits", "wallet", "bookings", "orders", "help", "about", "terms", "privacy", "static", "_next",
 }

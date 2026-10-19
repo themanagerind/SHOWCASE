@@ -3,7 +3,7 @@ import uuid
 from datetime import date, datetime
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core import clock
@@ -19,8 +19,8 @@ super_admin = require_admin(super_admin=True)
 
 class OfferIn(BaseModel):
     name: str = Field(min_length=3, max_length=120)
-    starts_at: datetime
-    ends_at: datetime
+    starts_at: AwareDatetime  # a time without a zone is refused (422) instead of crashing
+    ends_at: AwareDatetime
     threshold_paise: int = Field(gt=0, le=10**12)
     percent_bp: int = Field(gt=0, le=10000)
 

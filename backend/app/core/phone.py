@@ -2,7 +2,7 @@ import re
 
 from app.core.errors import DomainError
 
-_INDIAN_MOBILE = re.compile(r"^[6-9]\d{9}$")
+_INDIAN_MOBILE = re.compile(r"^[6-9][0-9]{9}$")  # ASCII digits only: "९८७…" must not make a second account
 
 
 def normalize_indian_mobile(raw: str) -> str:

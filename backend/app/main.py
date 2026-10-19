@@ -21,10 +21,7 @@ SECURITY_HEADERS = {
 
 
 @app.middleware("http")
-async def limits_and_headers(request: Request, call_next):
-    length = request.headers.get("content-length")
-    if length and length.isdigit() and int(length) > _s.max_body_bytes:
-        return JSONResponse(status_code=413, content={"error": "too_large", "message": "Request is too large"})
+async def security_headers(request: Request, call_next):
     response = await call_next(request)
     for k, v in SECURITY_HEADERS.items():
         if k == "Cache-Control" and k.lower() in response.headers:
@@ -33,12 +30,70 @@ async def limits_and_headers(request: Request, call_next):
     return response
 
 
+class _TooLarge(Exception):
+    pass
+
+
+class BodyLimitMiddleware:
+    """Caps request bodies at max_body_bytes, counting the bytes as they arrive — so a chunked upload without
+    Content-Length is stopped too (security audit), not buffered into memory."""
+
+    def __init__(self, app, max_bytes: int):
+        self.app, self.max_bytes = app, max_bytes
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        headers = dict(scope.get("headers") or [])
+        length = headers.get(b"content-length", b"")
+        if length.isdigit() and int(length) > self.max_bytes:
+            return await self._reject(send)
+        seen = 0
+        started = rejected = False
+
+        async def limited_receive():
+            nonlocal seen, started, rejected
+            message = await receive()
+            if message["type"] == "http.request":
+                seen += len(message.get("body", b""))
+                if seen > self.max_bytes:
+                    if not started:  # answer now: the app may turn the exception below into a generic 400
+                        started = rejected = True
+                        await self._reject(send)
+                    raise _TooLarge
+            return message
+
+        async def tracking_send(message):
+            nonlocal started
+            if rejected:
+                return  # we already answered 413
+            if message["type"] == "http.response.start":
+                started = True
+            await send(message)
+
+        try:
+            await self.app(scope, limited_receive, tracking_send)
+        except _TooLarge:
+            if not started:
+                await self._reject(send)
+
+    @staticmethod
+    async def _reject(send):
+        body = b'{"error":"too_large","message":"Request is too large"}'
+        await send({"type": "http.response.start", "status": 413,
+                    "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())]})
+        await send({"type": "http.response.body", "body": body})
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_s.cors_origins,
     allow_methods=["*"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+
+app.add_middleware(BodyLimitMiddleware, max_bytes=_s.max_body_bytes)  # outermost of ours
 
 
 @app.exception_handler(DomainError)

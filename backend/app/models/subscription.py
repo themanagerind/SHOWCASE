@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, SmallInteger, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Index, Integer, SmallInteger, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -47,10 +47,15 @@ class Subscription(Model):
     grace_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     price_override_paise: Mapped[int | None] = mapped_column(BigInteger)
     price_override_reason: Mapped[str | None] = mapped_column(Text)
+    # The override is for ONE plan + cycle (deep audit): switching plan/cycle must not carry the old price along.
+    price_override_plan_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("plans.id"))
+    price_override_cycle: Mapped[BillingPeriod | None] = mapped_column(pg_enum(BillingPeriod, "billing_period"))
+    # True = kept old price after a NEW_ONLY price change (an "ALL" change ends it); False = set by an admin.
+    price_override_grandfathered: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     razorpay_subscription_id: Mapped[str | None] = mapped_column(String(64), unique=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    plan: Mapped["Plan"] = relationship()
+    plan: Mapped["Plan"] = relationship(foreign_keys=[plan_id])
 
 
 class RetailerOffer(Model):
@@ -72,7 +77,12 @@ class SubscriptionPayment(Model):
     """One paid (or pending) billing period. The subscription's state is derived from PAID periods."""
 
     __tablename__ = "subscription_payments"
-    __table_args__ = (Index("ix_subscription_payments_subscription_id_status", "subscription_id", "status"),)
+    __table_args__ = (
+        Index("ix_subscription_payments_subscription_id_status", "subscription_id", "status"),
+        # A bank/UPI reference can be recorded once (references are normalised before saving).
+        Index("uq_subscription_payments_manual_reference", "reference", unique=True,
+              postgresql_where=text("gateway = 'manual'")),
+    )
 
     subscription_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("subscriptions.id"), index=True)
     plan_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("plans.id"))

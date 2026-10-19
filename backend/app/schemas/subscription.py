@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
+
+MAX_PAISE = 10**10  # ₹10 crore: bounds every amount so huge numbers are a 422, not a database error
 
 from app.models.enums import BillingPeriod, OfferType
 
@@ -88,9 +90,9 @@ class AdminRetailerPage(BaseModel):
 
 class OfferIn(BaseModel):
     offer_type: OfferType
-    value: int = Field(ge=0)
-    valid_from: datetime
-    valid_until: datetime
+    value: int = Field(ge=0, le=MAX_PAISE)
+    valid_from: AwareDatetime
+    valid_until: AwareDatetime
     reason: str = Field(min_length=3, max_length=500)
     plan_code: str | None = None
     billing_cycle: BillingPeriod | None = None
@@ -132,7 +134,7 @@ class ManualPaymentIn(BaseModel):
     plan_code: str
     billing_cycle: BillingPeriod
     reference: str = Field(min_length=2, max_length=120)
-    amount_paise: int | None = Field(default=None, ge=0)
+    amount_paise: int | None = Field(default=None, ge=0, le=MAX_PAISE)
 
 
 class GraceIn(BaseModel):
@@ -140,7 +142,7 @@ class GraceIn(BaseModel):
 
 
 class PriceOverrideIn(BaseModel):
-    amount_paise: int | None = Field(default=None, ge=0)
+    amount_paise: int | None = Field(default=None, ge=0, le=MAX_PAISE)
     reason: str = Field(min_length=3, max_length=500)
 
 
@@ -149,8 +151,8 @@ class PlanChangeIn(BaseModel):
 
 
 class PlanPriceIn(BaseModel):
-    monthly_paise: int | None = Field(default=None, gt=0)
-    yearly_paise: int | None = Field(default=None, gt=0)
+    monthly_paise: int | None = Field(default=None, gt=0, le=MAX_PAISE)
+    yearly_paise: int | None = Field(default=None, gt=0, le=MAX_PAISE)
     apply_to: str = Field(pattern="^(ALL|NEW_ONLY)$")
 
 

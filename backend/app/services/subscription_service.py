@@ -7,6 +7,7 @@ State model: a subscription's status is DERIVED from its PAID periods (subscript
   - else                               -> EXPIRED
 `recompute()` applies this; the hourly lifecycle job and every payment/admin action call it.
 """
+import unicodedata
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -126,7 +127,8 @@ def quote(db: Session, retailer: Retailer, plan: Plan, cycle: BillingPeriod, now
     now = now or clock.now()
     base = base_price(plan, cycle)
     sub = get_subscription(db, retailer.id)
-    if sub and sub.price_override_paise is not None and sub.plan_id == plan.id and sub.billing_cycle == cycle:
+    if (sub and sub.price_override_paise is not None and sub.price_override_plan_id == plan.id
+            and sub.price_override_cycle == cycle):
         amount, source, offer_id = sub.price_override_paise, "OVERRIDE", None
     elif (offer := active_offer(db, retailer.id, plan, cycle, now)) is not None:
         amount, source, offer_id = apply_offer(base, offer), "OFFER", offer.id
@@ -353,6 +355,12 @@ def handle_gateway_event(db: Session, event: dict) -> bool:
 
 # ---- admin actions (every one is audited) -------------------------------------------------------
 
+def normalise_reference(raw: str) -> str:
+    """'utr 123456', 'UTR123456\u200b' and fullwidth 'ＵＴＲ123456' are the same bank reference."""
+    s = unicodedata.normalize("NFKC", raw)
+    return "".join(ch for ch in s if not ch.isspace() and unicodedata.category(ch) != "Cf").upper()
+
+
 def record_manual_payment(db: Session, admin: AdminUser, retailer: Retailer, plan_code: str, cycle: BillingPeriod,
                           reference: str, amount_paise: int | None = None) -> SubscriptionPayment:
     now = clock.now()
@@ -364,7 +372,7 @@ def record_manual_payment(db: Session, admin: AdminUser, retailer: Retailer, pla
     if amount != q.amount_paise and admin.role != AdminRole.SUPER_ADMIN:
         # A different amount is effectively a price change, which is SUPER_ADMIN-only (SPEC 5).
         raise Forbidden("Only a super admin can record a different amount", code="super_admin_only")
-    reference = reference.strip()
+    reference = normalise_reference(reference)
     sub = _ensure_subscription(db, retailer, plan, cycle)  # locks the subscription: serialises payments
     if db.scalar(select(SubscriptionPayment.id).where(SubscriptionPayment.gateway == "manual",
                                                       SubscriptionPayment.reference == reference)):
@@ -414,6 +422,10 @@ def set_price_override(db: Session, admin: AdminUser, retailer: Retailer, amount
     sub = _live_or_any_subscription(db, retailer)
     old = {"price_override_paise": sub.price_override_paise, "reason": sub.price_override_reason}
     sub.price_override_paise, sub.price_override_reason = amount_paise, reason if amount_paise is not None else None
+    # Bound to the plan + cycle the retailer is on now; it does not follow them to another plan or cycle.
+    sub.price_override_plan_id = sub.plan_id if amount_paise is not None else None
+    sub.price_override_cycle = sub.billing_cycle if amount_paise is not None else None
+    sub.price_override_grandfathered = False
     audit(db, admin, "price_override_set", retailer_id=retailer.id, subscription_id=sub.id, old=old,
           new={"price_override_paise": amount_paise, "reason": reason})
     db.commit()
@@ -500,9 +512,20 @@ def update_plan_prices(db: Session, admin: AdminUser, plan_code: str, *, monthly
             if changed_cycles[sub.billing_cycle]:
                 sub.price_override_paise = base_price(plan, sub.billing_cycle)
                 sub.price_override_reason = f"Grandfathered: {plan.code} price change on {clock.now().date().isoformat()}"
+                sub.price_override_plan_id, sub.price_override_cycle = plan.id, sub.billing_cycle
+                sub.price_override_grandfathered = True
                 grandfathered += 1
                 audit(db, admin, "price_grandfathered", retailer_id=sub.retailer_id, subscription_id=sub.id,
                       new={"price_override_paise": sub.price_override_paise})
+    else:  # ALL: "apply to all" includes retailers who kept an old price; admin-set custom prices stay
+        for sub in db.scalars(select(Subscription).where(Subscription.price_override_grandfathered.is_(True),
+                                                         Subscription.price_override_plan_id == plan.id)):
+            audit(db, admin, "price_grandfathering_ended", retailer_id=sub.retailer_id, subscription_id=sub.id,
+                  old={"price_override_paise": sub.price_override_paise})
+            sub.price_override_paise = sub.price_override_reason = None
+            sub.price_override_plan_id = sub.price_override_cycle = None
+            sub.price_override_grandfathered = False
+            grandfathered -= 1
     if monthly_paise is not None:
         plan.base_price_paise = monthly_paise
     if yearly_paise is not None:

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.subscriptions import gateway_dep, subscription_out
 from app.core.dependencies import require_admin
-from app.core.errors import NotFound
+from app.core.errors import Forbidden, NotFound
 from app.db.session import get_db
 from app.models import AdminUser, Plan, Retailer, RetailerOffer, Subscription, SubscriptionAuditLog, User
 from app.models.enums import LIVE_SUBSCRIPTION_STATUSES, SubscriptionStatus
@@ -35,10 +35,13 @@ any_admin = require_admin()
 super_admin = require_admin(super_admin=True)
 
 
-def _retailer(db: Session, retailer_id: uuid.UUID) -> Retailer:
+def _retailer(db: Session, retailer_id: uuid.UUID, acting: AdminUser | None = None) -> Retailer:
     r = db.get(Retailer, retailer_id)
     if r is None or r.deleted_at is not None:
         raise NotFound("Retailer not found")
+    if acting is not None and r.user_id == acting.user_id:
+        # An admin who also owns a shop must not pay, extend or re-price it themselves (security audit).
+        raise Forbidden("Admins cannot change their own shop", code="own_shop")
     return r
 
 
@@ -118,41 +121,41 @@ def record_payment(retailer_id: uuid.UUID, body: ManualPaymentIn, admin: AdminUs
                    db: Session = Depends(get_db)):
     from app.api.v1.subscriptions import payment_out
 
-    p = subs.record_manual_payment(db, admin, _retailer(db, retailer_id), body.plan_code, body.billing_cycle,
+    p = subs.record_manual_payment(db, admin, _retailer(db, retailer_id, admin), body.plan_code, body.billing_cycle,
                                    body.reference, body.amount_paise)
     return payment_out(db, p)
 
 
 @router.post("/retailers/{retailer_id}/grace")
 def extend_grace(retailer_id: uuid.UUID, body: GraceIn, admin: AdminUser = Depends(any_admin), db: Session = Depends(get_db)):
-    sub = subs.extend_grace(db, admin, _retailer(db, retailer_id), body.extra_days)
+    sub = subs.extend_grace(db, admin, _retailer(db, retailer_id, admin), body.extra_days)
     return {"status": sub.status.value, "grace_days": sub.grace_days_override, "grace_ends_at": sub.grace_ends_at}
 
 
 @router.put("/retailers/{retailer_id}/price-override")
 def price_override(retailer_id: uuid.UUID, body: PriceOverrideIn, admin: AdminUser = Depends(super_admin),
                    db: Session = Depends(get_db)):
-    sub = subs.set_price_override(db, admin, _retailer(db, retailer_id), body.amount_paise, body.reason)
+    sub = subs.set_price_override(db, admin, _retailer(db, retailer_id, admin), body.amount_paise, body.reason)
     return {"price_override_paise": sub.price_override_paise, "reason": sub.price_override_reason}
 
 
 @router.post("/retailers/{retailer_id}/offers", response_model=OfferOut, status_code=201)
 def create_offer(retailer_id: uuid.UUID, body: OfferIn, admin: AdminUser = Depends(super_admin),
                  db: Session = Depends(get_db)):
-    o = subs.create_offer(db, admin, _retailer(db, retailer_id), **body.model_dump())
+    o = subs.create_offer(db, admin, _retailer(db, retailer_id, admin), **body.model_dump())
     return _offer_out(db, o)
 
 
 @router.delete("/retailers/{retailer_id}/offers/{offer_id}", status_code=204)
 def revoke_offer(retailer_id: uuid.UUID, offer_id: uuid.UUID, admin: AdminUser = Depends(super_admin),
                  db: Session = Depends(get_db)):
-    subs.revoke_offer(db, admin, _retailer(db, retailer_id), offer_id)
+    subs.revoke_offer(db, admin, _retailer(db, retailer_id, admin), offer_id)
 
 
 @router.post("/retailers/{retailer_id}/plan")
 def change_plan(retailer_id: uuid.UUID, body: PlanChangeIn, admin: AdminUser = Depends(super_admin),
                 db: Session = Depends(get_db)):
-    sub = subs.change_plan_now(db, admin, _retailer(db, retailer_id), body.plan_code)
+    sub = subs.change_plan_now(db, admin, _retailer(db, retailer_id, admin), body.plan_code)
     return {"plan_code": body.plan_code, "status": sub.status.value}
 
 

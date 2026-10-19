@@ -45,7 +45,8 @@ def track(db: Session, redis: Redis, retailer: Retailer, event_type: ShopEventTy
     if user is not None and user.id == retailer.user_id:
         return False  # the retailer's own visits don't count
     customer_id = db.scalar(select(Customer.id).where(Customer.user_id == user.id)) if user else None
-    visitor = str(customer_id) if customer_id else anon_id
+    # Separate namespaces: an anon_id set to someone's customer id must not count (or rate-limit) as them.
+    visitor = f"c:{customer_id}" if customer_id else (f"a:{anon_id}" if anon_id else None)
     if visitor is None:
         raise DomainError("Visitor id required", code="invalid_event")
     rate_limit.hit(redis, "events", visitor, 300, 3600)
@@ -100,7 +101,7 @@ class Dashboard:
     top_products: list[dict] = field(default_factory=list)  # [{product_id, name, views}]
 
 
-_VISITOR = func.coalesce(cast(ShopEvent.customer_id, String), ShopEvent.anon_id)
+_VISITOR = func.coalesce("c:" + cast(ShopEvent.customer_id, String), "a:" + ShopEvent.anon_id)
 _IST_DAY = func.date(func.timezone("Asia/Kolkata", ShopEvent.created_at))
 
 

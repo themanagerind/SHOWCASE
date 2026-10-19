@@ -9,6 +9,8 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, HttpUrl, mode
 
 PHONE = r"^\+?[0-9]{10,13}$"
 PINCODE = r"^[1-9][0-9]{5}$"
+MAX_PAISE = 10**10  # ₹10 crore — larger numbers are a 422, not a database overflow (500)
+MAX_STOCK = 1_000_000
 UPI = r"^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$"
 TIME = r"^([01]\d|2[0-3]):[0-5]\d$"
 DAYS = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
@@ -145,10 +147,10 @@ class ProductCreate(BaseModel):
     name: str = Field(min_length=2, max_length=160)
     description: str | None = Field(default=None, max_length=4000)
     category: str | None = Field(default=None, max_length=60)
-    price_paise: int = Field(gt=0)
-    mrp_paise: int | None = Field(default=None, ge=0)
-    wallet_discount_paise: int = Field(gt=0, description="Mandatory wallet-points discount; also points needed to reserve")
-    stock_qty: int = Field(default=0, ge=0)
+    price_paise: int = Field(gt=0, le=MAX_PAISE)
+    mrp_paise: int | None = Field(default=None, ge=0, le=MAX_PAISE)
+    wallet_discount_paise: int = Field(gt=0, le=MAX_PAISE, description="Mandatory wallet-points discount; also points needed to reserve")
+    stock_qty: int = Field(default=0, ge=0, le=MAX_STOCK)
     photos: list[PhotoUrl] = Field(default_factory=list, max_length=8)
 
     @model_validator(mode="after")
@@ -164,10 +166,10 @@ class ProductUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=160)
     description: str | None = Field(default=None, max_length=4000)
     category: str | None = Field(default=None, max_length=60)
-    price_paise: int | None = Field(default=None, gt=0)
-    mrp_paise: int | None = Field(default=None, ge=0)
-    wallet_discount_paise: int | None = Field(default=None, gt=0)
-    stock_qty: int | None = Field(default=None, ge=0)
+    price_paise: int | None = Field(default=None, gt=0, le=MAX_PAISE)
+    mrp_paise: int | None = Field(default=None, ge=0, le=MAX_PAISE)
+    wallet_discount_paise: int | None = Field(default=None, gt=0, le=MAX_PAISE)
+    stock_qty: int | None = Field(default=None, ge=0, le=MAX_STOCK)
     photos: list[PhotoUrl] | None = Field(default=None, max_length=8)
 
     @model_validator(mode="after")

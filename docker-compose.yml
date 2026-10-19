@@ -28,7 +28,8 @@ services:
     # Behind a reverse proxy, trust X-Forwarded-For ONLY from the proxy (FORWARDED_ALLOW_IPS = its IP/CIDR);
     # otherwise every user shares the proxy IP for rate limits, or (with "*") the header can be forged.
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=$${FORWARDED_ALLOW_IPS:-127.0.0.1}"
-    ports: ["8001:8000"]  # 8000 is left free for THE-MANAGER backend on the same machine
+    # Local only: the public entry point is the TLS reverse proxy (its body limits and headers must not be bypassable).
+    ports: ["127.0.0.1:8001:8000"]  # 8000 is left free for THE-MANAGER backend on the same machine
     depends_on:
       db: {condition: service_healthy}
       redis: {condition: service_started}

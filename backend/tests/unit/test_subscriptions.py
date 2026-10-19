@@ -316,3 +316,33 @@ def test_payments_never_double_count(db, frozen):
     paid = db.scalars(select(SubscriptionPayment).where(SubscriptionPayment.subscription_id == sub.id)).all()
     subs._activate(db, sub, paid[0], clock.now())  # second activation is a no-op
     assert db.scalar(select(func.count()).select_from(SubscriptionPayment)) == 1
+
+
+# ---- deep audit: a price override belongs to one plan + cycle --------------------------------------
+
+def test_override_does_not_follow_the_retailer_to_another_plan_or_cycle(db, frozen):
+    admin, r = make_super_admin(db), make_retailer(db)
+    subs.record_manual_payment(db, admin, r, "PRO", M, "a")
+    subs.set_price_override(db, admin, r, 29900, "loyal customer")
+    assert subs.quote(db, r, plan(db, "PRO"), M).amount_paise == 29900
+    assert subs.quote(db, r, plan(db, "PRO"), Y).amount_paise == 319900       # yearly: not the monthly override
+    assert subs.quote(db, r, plan(db, "BASIC"), M).amount_paise == 19900      # another plan: its own price
+    subs.record_manual_payment(db, admin, r, "PRO", Y, "b")                    # queued yearly period ...
+    frozen.tick(timedelta(days=32))
+    subs.run_lifecycle(db)                                                     # ... becomes current
+    assert subs.quote(db, r, plan(db, "PRO"), Y).amount_paise == 319900       # still the real yearly price
+    assert subs.quote(db, r, plan(db, "PRO"), M).amount_paise == 29900        # override kept for PRO monthly
+
+
+def test_price_change_all_ends_grandfathering_but_keeps_admin_overrides(db, frozen):
+    admin = make_super_admin(db)
+    kept, custom = make_retailer(db), make_retailer(db)
+    subs.record_manual_payment(db, admin, kept, "PRO", M, "a")
+    subs.record_manual_payment(db, admin, custom, "PRO", M, "b")
+    subs.set_price_override(db, admin, custom, 25000, "special deal")
+    subs.update_plan_prices(db, admin, "PRO", monthly_paise=44900, yearly_paise=None, apply_to="NEW_ONLY")
+    assert subs.quote(db, kept, plan(db, "PRO"), M).amount_paise == 39900     # grandfathered
+    subs.update_plan_prices(db, admin, "PRO", monthly_paise=49900, yearly_paise=None, apply_to="ALL")
+    assert subs.quote(db, kept, plan(db, "PRO"), M).amount_paise == 49900     # "all" includes them now
+    assert subs.quote(db, custom, plan(db, "PRO"), M).amount_paise == 25000   # admin deal untouched
+    assert len(audits(db, "price_grandfathering_ended")) == 1

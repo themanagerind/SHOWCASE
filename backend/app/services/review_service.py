@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.core.errors import DomainError, NotFound
+from app.core.errors import DomainError, Forbidden, NotFound
 from app.models import Booking, Customer, Retailer, Review, ShopDiscountRequest, User
 from app.models.enums import BookingStatus, DiscountRequestStatus, ReviewSource
 
@@ -81,6 +81,10 @@ def submit(db: Session, customer: Customer, source_type: ReviewSource, source_id
                         source_id=source_id, purchased_at=p.purchased_at, rating=rating, comment=comment)
         db.add(review)
     else:  # edit within the window; a hidden review stays hidden
+        if review.resolved_at is not None and not review.is_hidden and (rating, comment) != (review.rating, review.comment):
+            # A KEPT review that is rewritten is new text the admin never saw: the retailer may report it again.
+            review.is_flagged, review.flag_reason, review.flagged_at = False, None, None
+            review.resolved_at = review.resolved_by_user_id = None
         review.rating, review.comment = rating, comment
     db.flush()
     recompute(db, p.retailer_id)
@@ -144,6 +148,8 @@ def resolve(db: Session, user: User, review_id: uuid.UUID, hide: bool) -> Review
         raise NotFound("Flagged review not found")
     if review.resolved_at is not None:
         raise DomainError("Already resolved", code="review_resolved")
+    if db.get(Retailer, review.retailer_id).user_id == user.id:
+        raise Forbidden("Admins cannot moderate reviews of their own shop", code="own_shop")
     review.is_hidden, review.resolved_at, review.resolved_by_user_id = hide, clock.now(), user.id
     db.flush()
     recompute(db, review.retailer_id)
