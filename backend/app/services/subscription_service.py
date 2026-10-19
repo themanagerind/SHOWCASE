@@ -7,6 +7,7 @@ State model: a subscription's status is DERIVED from its PAID periods (subscript
   - else                               -> EXPIRED
 `recompute()` applies this; the hourly lifecycle job and every payment/admin action call it.
 """
+import logging
 import unicodedata
 import uuid
 from dataclasses import dataclass
@@ -40,6 +41,8 @@ from app.models.enums import (
 )
 from app.services import settings_service
 from app.services.payments.gateway import PaymentGateway
+
+log = logging.getLogger(__name__)
 
 CYCLE_MONTHS = {BillingPeriod.MONTHLY: 1, BillingPeriod.YEARLY: 12}
 REMINDER_BEFORE = timedelta(days=3)
@@ -206,30 +209,45 @@ def _notify(db: Session, user_id, template: str, payload: dict, dedupe_key: str)
 
 
 def run_lifecycle(db: Session, now: datetime | None = None) -> dict:
-    """Hourly job: recompute every subscription and queue reminders. Safe to run any number of times."""
+    """Hourly job: recompute every subscription and queue reminders. Safe to run any number of times.
+
+    One subscription at a time, row-locked and committed on its own (deep audit): a payment that lands while the
+    job runs is never overwritten with a stale status, and one bad row does not undo the whole run.
+    """
     now = now or clock.now()
-    changed = reminders = 0
-    rows = db.execute(
-        select(Subscription, Retailer.user_id)
-        .join(Retailer, Retailer.id == Subscription.retailer_id)
-        .where(Subscription.status != SubscriptionStatus.CANCELLED)
-    ).all()
-    for sub, user_id in rows:
-        before = sub.status
-        after = recompute(db, sub, now)
-        if after != before:
-            changed += 1
-            _notify(db, user_id, f"subscription_{after.value.lower()}",
-                    {"status": after.value, "grace_ends_at": sub.grace_ends_at.isoformat() if sub.grace_ends_at else None},
-                    f"sub:{sub.id}:{after.value}:{(sub.current_period_end or now).isoformat()}")
-        ends = sub.current_period_end
-        if (after in (SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL) and ends and now < ends <= now + REMINDER_BEFORE
-                and next_paid_period(db, sub, now) is None):
-            reminders += 1
-            _notify(db, user_id, "subscription_expiring", {"ends_at": ends.isoformat(), "status": after.value},
-                    f"sub-expiring:{sub.id}:{ends.isoformat()}")
-    db.commit()
-    return {"checked": len(rows), "changed": changed, "reminders": reminders}
+    changed = reminders = checked = 0
+    ids = db.scalars(select(Subscription.id).where(Subscription.status != SubscriptionStatus.CANCELLED)).all()
+    for sub_id in ids:
+        try:
+            row = db.execute(
+                select(Subscription, Retailer.user_id).join(Retailer, Retailer.id == Subscription.retailer_id)
+                .where(Subscription.id == sub_id).with_for_update(of=Subscription, skip_locked=True)
+                .execution_options(populate_existing=True)
+            ).first()
+            if row is None:  # busy (a payment is settling it right now): the next hourly run picks it up
+                db.rollback()
+                continue
+            sub, user_id = row
+            checked += 1
+            before = sub.status
+            after = recompute(db, sub, now)
+            if after != before:
+                changed += 1
+                _notify(db, user_id, f"subscription_{after.value.lower()}",
+                        {"status": after.value,
+                         "grace_ends_at": sub.grace_ends_at.isoformat() if sub.grace_ends_at else None},
+                        f"sub:{sub.id}:{after.value}:{(sub.current_period_end or now).isoformat()}")
+            ends = sub.current_period_end
+            if (after in (SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL) and ends
+                    and now < ends <= now + REMINDER_BEFORE and next_paid_period(db, sub, now) is None):
+                reminders += 1
+                _notify(db, user_id, "subscription_expiring", {"ends_at": ends.isoformat(), "status": after.value},
+                        f"sub-expiring:{sub.id}:{ends.isoformat()}")
+            db.commit()
+        except Exception:  # noqa: BLE001 - logged; the other subscriptions must still be processed
+            db.rollback()
+            log.exception("lifecycle failed for subscription %s", sub_id)
+    return {"checked": checked, "changed": changed, "reminders": reminders}
 
 
 # ---- trial --------------------------------------------------------------------------------------
@@ -264,6 +282,21 @@ def _ensure_subscription(db: Session, retailer: Retailer, plan: Plan, cycle: Bil
     return sub
 
 
+def _chain_anchor(db: Session, sub: Subscription, start: datetime) -> tuple[datetime, int]:
+    """If `start` continues PAID periods back-to-back, return (first start of that run, months already in it)."""
+    periods = db.execute(select(SubscriptionPayment.period_start, SubscriptionPayment.period_end,
+                                SubscriptionPayment.billing_cycle)
+                         .where(SubscriptionPayment.subscription_id == sub.id,
+                                SubscriptionPayment.status == SubscriptionPaymentStatus.PAID)
+                         .order_by(SubscriptionPayment.period_end.desc())).all()
+    anchor, months = start, 0
+    for p_start, p_end, cycle in periods:
+        if p_end != anchor:
+            break
+        anchor, months = p_start, months + CYCLE_MONTHS[cycle]
+    return anchor, months
+
+
 def _activate(db: Session, sub: Subscription, payment: SubscriptionPayment, now: datetime) -> None:
     """Mark a payment PAID and place its period. Paying early queues the period after the current one, so the
     retailer loses no days and a plan change takes effect from the next renewal (SPEC 5)."""
@@ -280,7 +313,9 @@ def _activate(db: Session, sub: Subscription, payment: SubscriptionPayment, now:
     if sub.status == SubscriptionStatus.TRIAL and sub.trial_ends_at and sub.trial_ends_at > start:
         start = sub.trial_ends_at
     payment.period_start = start
-    payment.period_end = add_months(start, CYCLE_MONTHS[payment.billing_cycle])
+    anchor, months_before = _chain_anchor(db, sub, start)
+    # Count from the start of a run of back-to-back periods, so 31 Jan -> 28 Feb -> 31 Mar (no days lost).
+    payment.period_end = add_months(anchor, months_before + CYCLE_MONTHS[payment.billing_cycle])
     payment.status = SubscriptionPaymentStatus.PAID
     payment.paid_at = now
     db.flush()

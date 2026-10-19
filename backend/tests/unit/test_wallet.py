@@ -94,7 +94,7 @@ def test_still_down_stays_pending_then_job_settles_it(db):
     assert (out.status, out.balance_paise) == (RedemptionStatus.PENDING, 0)
     first_request_id = tm.calls[0][1]
     res = ws.retry_pending(db, tm, older_than=timedelta(seconds=-1))
-    assert res == {"retried": 1, "settled": 1}
+    assert res == {"retried": 1, "settled": 1, "failed": 0}
     assert balance(db, c) == 150000 and tm.calls[-1][1] == first_request_id
 
 
@@ -203,3 +203,38 @@ def test_lost_response_then_outage_keeps_redemption_pending_until_credited(db):
     ws.retry_pending(db, tm, older_than=timedelta(0))
     assert balance(db, c) == 150000
     assert len({rid for _, rid in tm.calls}) == 1
+
+
+def test_odd_reply_never_blocks_the_retry_job(db):
+    """Deep audit: one malformed THE-MANAGER answer must not crash the job for everyone after it."""
+    c1, c2 = make_customer(db), make_customer(db)
+    tm = FakeTheManager()
+    tm.fail_next = 3
+    ws.redeem_code(db, c1, "AB3DEFGH", tm)   # both stay PENDING (network down)
+    tm.fail_next = 3
+    ws.redeem_code(db, c2, "SMALL100", tm)
+    calls = {"n": 0}
+    real = tm.verify
+
+    def broken_then_ok(code, rid):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ValueError("garbage reply")  # an unexpected error, not a TransientError
+        return real(code, rid)
+
+    tm.verify = broken_then_ok
+    res = ws.retry_pending(db, tm, older_than=timedelta(0))
+    assert res["failed"] == 1 and res["settled"] == 1   # the second customer still got their points
+
+
+def test_reply_with_odd_date_still_credits():
+    import httpx
+
+    def handler(request):
+        return httpx.Response(200, json={"amount_paise": 5000, "used_at": "17/10/2026 16:43"})
+
+    client = HttpTheManagerClient("http://tm", "k")
+    from unittest import mock
+
+    with mock.patch("httpx.post", lambda *a, **k: handler(None)):
+        assert client.verify("DEMO0500", "r").outcome == "ok"

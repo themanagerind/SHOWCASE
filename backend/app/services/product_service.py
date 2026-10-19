@@ -210,8 +210,15 @@ def list_public(db: Session, retailer: Retailer) -> list[Product]:
     q = (
         select(Product)
         .where(Product.retailer_id == retailer.id, Product.is_active.is_(True), Product.deleted_at.is_(None))
-        .order_by(Product.activated_at.desc(), Product.id)
+        # Same order as product search's "within plan limit" rule (newest first, then higher id) — deep audit:
+        # products added in one swap share activated_at, and the page and search must agree on which N show.
+        .order_by(Product.activated_at.desc(), Product.id.desc())
     )
     if features.max_products is not None:
         q = q.limit(features.max_products)
     return list(db.scalars(q))
+
+
+def is_publicly_listed(db: Session, retailer: Retailer, product_id) -> bool:
+    """True if the product is on the public page now (active and inside the plan limit after a downgrade)."""
+    return any(p.id == product_id for p in list_public(db, retailer))

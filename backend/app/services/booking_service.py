@@ -11,7 +11,7 @@ import secrets
 import uuid
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -27,7 +27,7 @@ from app.models.enums import (
     WalletEntryType,
     WalletOwnerType,
 )
-from app.services import analytics_service, plan_service, wallet_service
+from app.services import analytics_service, plan_service, product_service, wallet_service
 
 BOOKING_VALIDITY = timedelta(hours=24)
 DISCOUNT_REQUEST_VALIDITY = timedelta(minutes=30)
@@ -64,6 +64,8 @@ def reserve(db: Session, customer: Customer, product_id: uuid.UUID) -> Booking:
         raise Forbidden("This shop is not taking bookings right now", code="shop_not_live")
     if retailer.user_id == customer.user_id:
         raise DomainError("You cannot book from your own shop", code="own_shop")
+    if not product_service.is_publicly_listed(db, retailer, product.id):
+        raise NotFound("Product not found")  # hidden after a plan downgrade: not bookable either (deep audit)
     if product.stock_qty < 1:
         raise DomainError("This product is out of stock", code="out_of_stock")
     discount = product.wallet_discount_paise
@@ -277,10 +279,10 @@ def discounts_for_retailer(db: Session, retailer: Retailer) -> list[ShopDiscount
 
 
 def expire_discount_requests(db: Session, now: datetime | None = None) -> int:
+    """Job. One conditional UPDATE: a request the customer confirms at the same moment is never turned EXPIRED."""
     now = now or clock.now()
-    reqs = db.scalars(select(ShopDiscountRequest).where(
-        ShopDiscountRequest.status == DiscountRequestStatus.PENDING, ShopDiscountRequest.expires_at <= now)).all()
-    for r in reqs:
-        r.status = DiscountRequestStatus.EXPIRED
+    n = db.execute(update(ShopDiscountRequest).where(
+        ShopDiscountRequest.status == DiscountRequestStatus.PENDING, ShopDiscountRequest.expires_at <= now)
+        .values(status=DiscountRequestStatus.EXPIRED)).rowcount
     db.commit()
-    return len(reqs)
+    return n

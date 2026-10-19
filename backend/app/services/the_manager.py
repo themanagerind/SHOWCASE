@@ -52,11 +52,17 @@ class HttpTheManagerClient:
         except httpx.HTTPError as exc:
             raise TransientError(str(exc)) from exc
         if r.status_code == 200:
-            data = r.json()
-            amount = data.get("amount_paise")
+            try:
+                data = r.json()
+                amount = data.get("amount_paise")
+            except (ValueError, AttributeError) as exc:  # not JSON / not an object: retry later, never crash
+                raise TransientError(f"unreadable reply: {exc}") from exc
             if not isinstance(amount, int) or isinstance(amount, bool) or amount <= 0:
                 raise TransientError(f"unexpected amount_paise: {amount!r}")  # never trust a float/odd value
-            used_at = datetime.fromisoformat(data["used_at"]) if data.get("used_at") else None
+            try:
+                used_at = datetime.fromisoformat(data["used_at"]) if data.get("used_at") else None
+            except (TypeError, ValueError):
+                used_at = None  # informational only: an odd date must not block crediting the points
             return VerifyResult("ok", amount, used_at)
         known = {404: "not_found", 409: "used", 401: "unauthorized", 503: "unavailable"}
         if r.status_code in known:
@@ -71,7 +77,10 @@ class HttpTheManagerClient:
         except httpx.HTTPError as exc:
             raise TransientError(str(exc)) from exc
         if r.status_code == 200:
-            data = r.json()
+            try:
+                data = r.json()
+            except ValueError as exc:
+                raise TransientError("unreadable prefill reply") from exc
             if not isinstance(data, dict) or not isinstance(data.get("mobile"), str):
                 raise TransientError("prefill response without mobile")
             return PrefillResult("ok", data)

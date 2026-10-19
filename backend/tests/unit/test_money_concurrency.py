@@ -112,3 +112,38 @@ def test_cleanup_leaves_no_live_test_offers(engine):
     with Session(engine) as s:
         s.execute(text("UPDATE retailer_reward_offers SET cancelled_at = now() WHERE name = 'race' AND cancelled_at IS NULL"))
         s.commit()
+
+
+def test_lifecycle_job_does_not_overwrite_a_payment_settling_at_the_same_time(engine):
+    from app.models.enums import SubscriptionStatus
+    with Session(engine) as s:
+        shop = make_shop(s, "BASIC", status="GRACE")
+        sub = s.scalar(select(Subscription).where(Subscription.retailer_id == shop.id))
+        sub.grace_ends_at = clock.now() - timedelta(hours=1)  # grace is over: the job would expire it
+        s.commit()
+        shop_id, sub_id, user_id, plan_id = shop.id, sub.id, shop.user_id, sub.plan_id
+
+    payer = Session(engine)  # a payment is settling and holds the subscription lock
+    psub = payer.scalar(select(Subscription).where(Subscription.id == sub_id).with_for_update())
+    t = threading.Thread(target=lambda: subs.run_lifecycle(Session(engine)))
+    t.start()
+    t.join(10)  # the job must skip the locked row instead of waiting or writing a stale status
+    pay = SubscriptionPayment(subscription_id=sub_id, plan_id=plan_id, billing_cycle=BillingPeriod.MONTHLY,
+                              amount_paise=19900, gst_paise=0, price_source="BASE", gateway="manual",
+                              reference="UTR-LIFECYCLE", status=SubscriptionPaymentStatus.CREATED)
+    payer.add(pay)
+    payer.flush()
+    subs._activate(payer, psub, pay, clock.now())
+    payer.commit()
+    payer.close()
+    try:
+        with Session(engine) as s:
+            assert s.get(Subscription, sub_id).status == SubscriptionStatus.ACTIVE  # not EXPIRED by the job
+    finally:
+        with Session(engine) as s:
+            s.execute(text("DELETE FROM notifications WHERE user_id = :u"), {"u": user_id})
+            s.execute(delete(SubscriptionPayment).where(SubscriptionPayment.subscription_id == sub_id))
+            s.execute(delete(Subscription).where(Subscription.id == sub_id))
+            s.execute(delete(Retailer).where(Retailer.id == shop_id))
+            s.execute(delete(User).where(User.id == user_id))
+            s.commit()

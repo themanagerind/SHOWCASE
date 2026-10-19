@@ -346,3 +346,21 @@ def test_price_change_all_ends_grandfathering_but_keeps_admin_overrides(db, froz
     assert subs.quote(db, kept, plan(db, "PRO"), M).amount_paise == 49900     # "all" includes them now
     assert subs.quote(db, custom, plan(db, "PRO"), M).amount_paise == 25000   # admin deal untouched
     assert len(audits(db, "price_grandfathering_ended")) == 1
+
+
+def test_months_are_counted_in_indian_time():
+    from zoneinfo import ZoneInfo
+    ist = ZoneInfo("Asia/Kolkata")
+    paid = datetime(2026, 5, 1, 1, 0, tzinfo=ist).astimezone(UTC)      # 30 Apr 19:30 UTC
+    assert add_months(paid, 1).astimezone(ist) == datetime(2026, 6, 1, 1, 0, tzinfo=ist)
+
+
+def test_paying_months_ahead_does_not_lose_days_after_february(db):
+    from freezegun import freeze_time
+    admin, r = make_super_admin(db), make_retailer(db)
+    with freeze_time("2027-01-31 06:00:00"):  # 31 Jan, 11:30 IST
+        a = subs.record_manual_payment(db, admin, r, "BASIC", M, "a")
+        b = subs.record_manual_payment(db, admin, r, "BASIC", M, "b")
+    ist = __import__("zoneinfo").ZoneInfo("Asia/Kolkata")
+    assert a.period_end.astimezone(ist).date().isoformat() == "2027-02-28"
+    assert b.period_end.astimezone(ist).date().isoformat() == "2027-03-31"  # not 28 Mar

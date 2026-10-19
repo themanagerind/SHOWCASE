@@ -15,6 +15,7 @@ from sqlalchemy import String, and_, cast, delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core import clock, rate_limit
+from app.core.dates import add_months
 from app.core.errors import DomainError
 from app.models import Customer, Product, Retailer, ShopEvent, User
 from app.models.enums import ShopEventType
@@ -74,8 +75,7 @@ def track(db: Session, redis: Redis, retailer: Retailer, event_type: ShopEventTy
 def purge_old(db: Session, now: datetime | None = None) -> int:
     """Job: raw events older than 13 months are deleted (SPEC 4.9)."""
     now = now or clock.now()
-    y, m = divmod(now.month - 1 - RETENTION_MONTHS, 12)
-    cutoff = now.replace(year=now.year + y, month=m + 1, day=min(now.day, 28))
+    cutoff = add_months(now, -RETENTION_MONTHS)  # exact calendar months (31 Oct -> 30 Sep a year before)
     n = db.execute(delete(ShopEvent).where(ShopEvent.created_at < cutoff)).rowcount
     db.commit()
     return n
@@ -115,7 +115,10 @@ def dashboard(db: Session, retailer: Retailer, days: int) -> Dashboard:
         raise DomainError("days must be 7, 30 or 90", code="invalid_period")
     features = plan_service.require_live_features(db, retailer.id)  # expired: closed like the other plan screens
     now = clock.now()
-    views_7d = _count(db, retailer.id, ShopEventType.SHOP_VIEW, now - timedelta(days=7))
+    # "X people viewed your shop": distinct visitors, not view events (deep audit).
+    views_7d = db.scalar(select(func.count(func.distinct(_VISITOR))).where(
+        ShopEvent.retailer_id == retailer.id, ShopEvent.event_type == ShopEventType.SHOP_VIEW,
+        ShopEvent.created_at >= now - timedelta(days=7)))
     if not features.has("analytics"):
         return Dashboard(full=False, days=7, views_7d=views_7d)
 

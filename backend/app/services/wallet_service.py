@@ -4,6 +4,7 @@ Every balance change goes through `post()`, which locks the wallet row, refuses 
 append-only ledger entry, so a wallet's balance always equals the sum of its ledger entries.
 """
 import hashlib
+import logging
 import hmac
 import re
 import uuid
@@ -63,6 +64,7 @@ def ledger_sum(db: Session, wallet: Wallet) -> int:
 
 # ---- THE-MANAGER code redemption ----------------------------------------------------------------
 
+log = logging.getLogger(__name__)
 CODE_RE = re.compile(r"^[A-Z0-9]{6,16}$")
 
 
@@ -153,5 +155,12 @@ def retry_pending(db: Session, client: TheManagerClient | None, older_than: time
     ids = db.scalars(select(WalletRedemption.id).where(
         WalletRedemption.status == RedemptionStatus.PENDING, WalletRedemption.attempts < MAX_JOB_ATTEMPTS,
         WalletRedemption.created_at < clock.now() - older_than)).all()
-    settled = sum(_finalise(db, rid, client, 1).status != RedemptionStatus.PENDING for rid in ids)
-    return {"retried": len(ids), "settled": settled}
+    settled = failed = 0
+    for rid in ids:
+        try:
+            settled += _finalise(db, rid, client, 1).status != RedemptionStatus.PENDING
+        except Exception:  # noqa: BLE001 - one bad row must not block every other customer's redemption
+            db.rollback()
+            failed += 1
+            log.exception("retry of redemption %s failed", rid)
+    return {"retried": len(ids), "settled": settled, "failed": failed}
