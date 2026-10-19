@@ -3,6 +3,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { api, ApiError, isLoggedIn, type Profile } from "@/lib/api";
+import { errorKey } from "@/lib/errors";
 import { useI18n } from "@/lib/i18n";
 
 // Flow: login (if needed) → profile (if incomplete) → join → favourites.
@@ -30,7 +31,7 @@ function Join() {
         router.replace(`/favourites?joined=${encodeURIComponent(slug)}`);
       } catch (e) {
         if (e instanceof ApiError && e.status === 401) router.replace(`/login?next=${encodeURIComponent(self)}`);
-        else setError(e instanceof ApiError && e.status === 404 ? t("shopNotFound") : (e as Error).message);
+        else setError(e instanceof ApiError && e.status === 404 ? t("shopNotFound") : t(errorKey(e)));
       }
     })();
   }, [slug, source, router, t]);

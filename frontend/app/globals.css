@@ -4,6 +4,7 @@
   --navy-2: #13315c;
   --green: #1e9e5a;
   --green-soft: #e6f6ed;
+  --green-text: #157a45; /* green for text and white-on-green: ≥ 4.5:1 (WCAG AA); --green stays for lines/bars */
   --bg: #ffffff;
   --surface: #f4f7fb;
   --card: #ffffff;
@@ -54,7 +55,7 @@ h2 { font-size: 18px; margin: 0 0 12px; }
 }
 .btn:disabled { opacity: .6; cursor: default; }
 .btn.secondary { background: var(--card); color: var(--brand); border: 1px solid var(--brand); }
-.btn.wa { background: var(--wa); }
+.btn.wa { background: var(--green-text); }
 .row { display: flex; gap: 8px; }
 .row > * { flex: 1; }
 .stack > * + * { margin-top: 12px; }
@@ -81,15 +82,15 @@ input[type="text"], input[type="tel"], input[type="url"], input[type="number"], 
 .fav .thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: #eef0f3; flex: none; }
 .fav .info { flex: 1; min-width: 0; }
 .fav .info a { font-weight: 600; text-decoration: none; color: var(--text); }
-.linkbtn { background: none; border: 0; color: var(--danger); font: inherit; font-size: 14px; cursor: pointer; padding: 8px; }
+.linkbtn { background: none; border: 0; color: var(--danger); font: inherit; font-size: 14px; cursor: pointer; padding: 8px; min-height: 44px; }
 .cap { text-transform: capitalize; }
 h1 { color: var(--navy); }
 .price { color: var(--navy); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { flex: none; border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.chip { flex: none; border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 999px; padding: 6px 12px; min-height: 40px; font: inherit; font-size: 14px; cursor: pointer; }
 .chip.on { background: var(--navy); color: #fff; border-color: var(--navy); }
-.dist { color: var(--green); font-weight: 600; font-size: 13px; }
-.heart { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 20px; cursor: pointer; color: var(--green); }
+.dist { color: var(--green-text); font-weight: 600; font-size: 13px; }
+.heart { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 20px; cursor: pointer; color: var(--green-text); }
 .heart.on { background: var(--green-soft); border-color: var(--green); }
 .note { font-size: 13px; color: var(--muted); }
 .tabs { display: flex; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
@@ -118,7 +119,7 @@ textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); borde
 .prow .actions { display: flex; gap: 4px; flex: none; }
 .small-btn { border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; }
 .small-btn.danger { color: var(--danger); }
-.muted-row { opacity: .55; }
+.muted-row { opacity: .75; }
 .qr { width: 220px; height: 220px; display: block; margin: 0 auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .linkbox { display: flex; gap: 8px; }
 .linkbox input { flex: 1; }
@@ -127,7 +128,7 @@ textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); borde
 .header nav a { white-space: nowrap; }
 @media (max-width: 400px) { .header nav { gap: 8px; font-size: 13px; } .brand { font-size: 16px; } }
 .status-pill.bad { background: #fdecea; color: var(--danger); }
-.save-chip { display: inline-block; margin-left: 6px; background: var(--green); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 11px; vertical-align: middle; }
+.save-chip { display: inline-block; margin-left: 6px; background: var(--green-text); color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 11px; vertical-align: middle; }
 .plan-card.current { border: 2px solid var(--green); }
 .big-price { font-size: 26px; font-weight: 800; color: var(--navy); margin-right: 4px; }
 .features { margin: 0; padding-left: 0; list-style: none; color: var(--text); font-size: 14px; }
@@ -163,14 +164,14 @@ h1, h2, h3, h4,
 .wallet-amount { font-size: 38px; font-weight: 800; color: #fff; margin: 4px 0; }
 .code-input { text-transform: uppercase; letter-spacing: .2em; font-size: 20px !important; text-align: center; }
 .amount { font-weight: 700; white-space: nowrap; }
-.amount.plus { color: var(--green); }
+.amount.plus { color: var(--green-text); }
 .amount.minus { color: var(--danger); }
 
 /* Bookings (step 6b) */
 .btn.small { padding: 8px 10px; font-size: 13px; width: 100%; margin-top: 8px; }
 .product .banner { margin-top: 6px; padding: 6px 8px; }
 .booking-no { font-family: ui-monospace, monospace; font-size: 22px; font-weight: 800; letter-spacing: 2px; color: var(--navy); }
-.countdown { font-weight: 700; color: var(--green); }
+.countdown { font-weight: 700; color: var(--green-text); }
 .status { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 8px; background: #eef0f3; color: var(--navy); }
 .status.RESERVED, .status.PENDING { background: #eef3fb; }
 .status.PURCHASED, .status.CONFIRMED { background: var(--green-soft); color: #11663a; }
@@ -191,10 +192,10 @@ h1, h2, h3, h4,
 .fav.unavailable .thumb { filter: grayscale(1); }
 
 /* Ratings (step 8a) */
-.stars { display: inline-flex; gap: 2px; line-height: 1; color: #c9d1dc; }
-.stars .on { color: #f5a524; }
-.stars.pick button { background: none; border: 0; padding: 4px; font: inherit; color: #c9d1dc; cursor: pointer; min-width: 44px; min-height: 44px; }
-.stars.pick button.on { color: #f5a524; }
+.stars { display: inline-flex; gap: 2px; line-height: 1; color: #8a96a6; }
+.stars .on { color: #c77c02; }
+.stars.pick button { background: none; border: 0; padding: 4px; font: inherit; color: #8a96a6; cursor: pointer; min-width: 44px; min-height: 44px; }
+.stars.pick button.on { color: #c77c02; }
 textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: #fff; resize: vertical; }
 .review { border-left: 3px solid var(--green); }
 .rating-big { font-size: 28px; font-weight: 800; color: var(--navy); margin-right: 6px; vertical-align: middle; }

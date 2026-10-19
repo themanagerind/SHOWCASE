@@ -4,13 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import RetailerNav from "@/components/RetailerNav";
 import { api, rupees } from "@/lib/api";
 import { type Booking, bookingErrorKey, type DiscountRequest, timeLeft } from "@/lib/bookings";
+import { PageLoading } from "@/components/LoadError";
+import { usePoll } from "@/lib/poll";
 import { useI18n } from "@/lib/i18n";
 import type { MessageKey } from "@/lib/messages";
 import { fmtDate, toPaise, useMyShop } from "@/lib/retailer";
 
 export default function RetailerBookingsPage() {
   const { t, lang } = useI18n();
-  const { shop } = useMyShop();
+  const { shop, failed: shopFailed } = useMyShop();
+  const [failed, setFailed] = useState(false);
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [requests, setRequests] = useState<DiscountRequest[]>([]);
   const [now, setNow] = useState(() => Date.now());
@@ -26,15 +29,16 @@ export default function RetailerBookingsPage() {
 
   useEffect(() => {
     if (!shop) return;
-    load();
+    load().catch(() => setFailed(true));
     const tick = setInterval(() => setNow(Date.now()), 30_000);
-    const poll = setInterval(load, 30_000); // see the customer's confirmation without reloading
-    return () => { clearInterval(tick); clearInterval(poll); };
+    return () => clearInterval(tick);
   }, [shop, load]);
+  usePoll(load, 30_000, !!shop); // see the customer's confirmation without reloading
 
   async function cancel(b: Booking) {
     const reason = prompt(t("rb_reasonPrompt"));
-    if (!reason || reason.trim().length < 2) return;
+    if (!reason || reason.trim().length < 2 || busy) return;
+    setBusy(true);
     setMsg(null);
     try {
       await api(`/retailers/me/bookings/${b.id}/cancel`, { method: "POST", body: JSON.stringify({ reason: reason.trim() }) });
@@ -42,7 +46,8 @@ export default function RetailerBookingsPage() {
     } catch (e) {
       setMsg({ ok: false, text: t(bookingErrorKey(e)) });
     }
-    await load();
+    await load().catch(() => {});
+    setBusy(false);
   }
 
   async function sendDiscount(e: React.FormEvent) {
@@ -60,11 +65,11 @@ export default function RetailerBookingsPage() {
       setMsg({ ok: false, text: t(bookingErrorKey(err)) });
     } finally {
       setBusy(false);
-      await load();
+      await load().catch(() => {});
     }
   }
 
-  if (!shop || !bookings) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
+  if (!shop || !bookings) return <PageLoading failed={failed || shopFailed} nav />;
   const open = bookings.filter((b) => b.status === "RESERVED" && new Date(b.expires_at).getTime() > now);
   const past = bookings.filter((b) => !open.includes(b));
   const who = (x: { customer_name: string | null; customer_phone: string | null }) =>
@@ -89,9 +94,9 @@ export default function RetailerBookingsPage() {
             </div>
           </div>
           <div className="note">
-            {t("b_points")}: <b>{rupees(b.discount_paise)}</b> · {t("b_timeLeft")}: <span className="countdown">{timeLeft(b.expires_at, now)}</span>
+            {t("b_points")}: <b>{rupees(b.discount_paise)}</b> · {t("b_timeLeft")}: <span className="countdown">{timeLeft(b.expires_at, now, t("u_hm"))}</span>
           </div>
-          <button className="btn secondary" onClick={() => cancel(b)}>{t("rb_cancel")}</button>
+          <button className="btn secondary" onClick={() => cancel(b)} disabled={busy}>{t("rb_cancel")}</button>
         </div>
       ))}
 

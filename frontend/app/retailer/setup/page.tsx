@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, ApiError, isLoggedIn } from "@/lib/api";
+import { api, isLoggedIn } from "@/lib/api";
+import { errorKey } from "@/lib/errors";
 import { useI18n } from "@/lib/i18n";
 
 const slugify = (s: string) =>
@@ -60,7 +61,7 @@ export default function ShopSetupPage() {
       await api("/retailers", { method: "POST", body: JSON.stringify(body) });
       router.replace("/retailer");
     } catch (e2) {
-      setErr(e2 instanceof ApiError ? e2.message : t("genericError"));
+      setErr(t(errorKey(e2)));
     } finally {
       setBusy(false);
     }

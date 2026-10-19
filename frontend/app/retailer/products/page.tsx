@@ -6,23 +6,28 @@ import ProductForm from "@/components/ProductForm";
 import PlanLocked from "@/components/PlanLocked";
 import RetailerNav from "@/components/RetailerNav";
 import { api, rupees } from "@/lib/api";
+import { PageLoading } from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
 import { changeWillLock, errorKey, fmtDate, type OwnProduct, type ProductInput, useMyShop } from "@/lib/retailer";
 
 export default function RetailerProducts() {
   const { t, lang } = useI18n();
-  const { shop, reload } = useMyShop();
+  const { shop, reload, failed: shopFailed } = useMyShop();
+  const [failed, setFailed] = useState(false);
   const [items, setItems] = useState<OwnProduct[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [swapMode, setSwapMode] = useState(false);
   const [toRemove, setToRemove] = useState<Set<string>>(new Set());
   const [toAdd, setToAdd] = useState<ProductInput[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => setItems(await api<OwnProduct[]>("/retailers/me/products")), []);
-  useEffect(() => { if (shop?.plan_code) load(); }, [shop, load]);
+  useEffect(() => { if (shop?.plan_code) load().catch(() => setFailed(true)); }, [shop, load]);
 
   async function run(fn: () => Promise<unknown>) {
+    if (busy) return false; // one change at a time: a double tap must not hide two products / swap twice
+    setBusy(true);
     setMsg(null);
     try {
       await fn();
@@ -32,11 +37,13 @@ export default function RetailerProducts() {
     } catch (e) {
       setMsg({ ok: false, text: t(errorKey(e)) });
       return false;
+    } finally {
+      setBusy(false);
     }
   }
 
   if (shop && !shop.plan_code) return <PlanLocked />;
-  if (!shop || !items) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
+  if (!shop || !items) return <PageLoading failed={failed || shopFailed} nav />;
 
   const active = items.filter((p) => p.is_active);
   const hidden = items.filter((p) => !p.is_active);
@@ -120,7 +127,7 @@ export default function RetailerProducts() {
           {!swapMode && (
             <div className="actions">
               <Link className="small-btn" href={`/retailer/products/${p.id}`}>{t("r_edit")}</Link>
-              {!locked && <button className="small-btn danger" onClick={() => hide(p.id)}>{t("r_hide")}</button>}
+              {!locked && <button className="small-btn danger" onClick={() => hide(p.id)} disabled={busy}>{t("r_hide")}</button>}
             </div>
           )}
         </div>
@@ -138,7 +145,7 @@ export default function RetailerProducts() {
           <ProductForm key={toAdd.length} submitLabel={`+ ${t("r_addToSwap")}`} onSubmit={(p) => setToAdd([...toAdd, p])} />
           <div className="row">
             <button className="btn secondary" onClick={() => { setSwapMode(false); setToRemove(new Set()); setToAdd([]); }}>{t("r_cancel")}</button>
-            <button className="btn" disabled={toRemove.size === 0 && toAdd.length === 0} onClick={doSwap}>
+            <button className="btn" disabled={busy || (toRemove.size === 0 && toAdd.length === 0)} onClick={doSwap}>
               {t("r_swapConfirm")} (−{toRemove.size} / +{toAdd.length})
             </button>
           </div>

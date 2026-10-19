@@ -81,7 +81,7 @@ def _paid_subscription(db, shop: Retailer, plan_code: str) -> None:
     db.add(SubscriptionPayment(
         subscription_id=sub.id, plan_id=plan.id, billing_cycle=BillingPeriod.MONTHLY, amount_paise=plan.base_price_paise,
         price_source="BASE", period_start=start, period_end=add_months(start, 1), status=SubscriptionPaymentStatus.PAID,
-        gateway="manual", reference="demo-seed", paid_at=start,
+        gateway="manual", reference=f"DEMO-SEED-{sub.id.hex[:8].upper()}", paid_at=start,  # unique per manual payment (0011)
     ))
 
 

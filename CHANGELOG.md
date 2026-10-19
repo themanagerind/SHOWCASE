@@ -129,3 +129,16 @@
 
 ## Step 9 on hold
 - Owner decision: courier integration (online orders and delivery) stays pending; SPEC §9 build order marked accordingly.
+
+## Deep audit (2026-10-19)
+- Five read-only reviews (SPEC conformance, logic, frontend, a second security pass, performance); fixes in three commits.
+- Security pass 2: open-redirect bypass via dot segments, chunked uploads past the body limit, non-ASCII digits in phone numbers, case/space/zero-width tricks in manual payment references (now unique), admins acting on their own shop, `ENV` typos. Price overrides are bound to their plan + billing cycle (migration `0011`).
+- Logic: months counted in Indian time and back-to-back periods without lost days; lifecycle job locks one subscription at a time; races in discount-request expiry and THE-MANAGER retries; downgraded shops show and book the same products everywhere.
+- Frontend:
+  - Booking checks the discount the customer saw, so a stale page cannot charge more points (`discount_changed`). The shop page refreshes prices on open.
+  - Several tabs refreshing their login at once no longer log each other out.
+  - Errors from the server appear in the person's language. Every page shows "Could not load — Try again" instead of loading forever. Polling pauses in hidden tabs.
+  - /discover no longer waits for an unanswered location prompt.
+  - Unknown product ids say "Not found". Login returns to the page you were on, and the language saved in the profile follows you across devices.
+  - Units, star labels and plan status are translated, digits are 0–9 everywhere, green text meets WCAG AA contrast, tap targets are larger and repeat taps are guarded.
+- Demo seed works with the unique payment reference. Backend: 294 tests passing.

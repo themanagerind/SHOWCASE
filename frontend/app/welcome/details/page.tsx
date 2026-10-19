@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, isLoggedIn, type Profile } from "@/lib/api";
+import { fill } from "@/lib/bookings";
+import { errorKey } from "@/lib/errors";
 import { useI18n } from "@/lib/i18n";
 import { clearPrefill, type PrefillData, readPrefill } from "@/lib/prefill";
 
@@ -52,7 +54,7 @@ export default function WelcomeDetails() {
       await api("/customers/me", { method: "PATCH", body: JSON.stringify({ ...form, city: form.city.trim(), name: form.name.trim() }) });
       router.replace("/discover");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("genericError"));
+      setError(t(errorKey(err)));
     } finally {
       setBusy(false);
     }
@@ -67,7 +69,7 @@ export default function WelcomeDetails() {
     <main>
       <form className="card stack" onSubmit={save}>
         <h1>{t("profileTitle")}</h1>
-        {note === "filled" && <div className="banner info">{t("pf_filled")}</div>}
+        {note === "filled" && <div className="banner info">{fill(t("pf_filled"), { save: t("save") })}</div>}
         {note === "mismatch" && <div className="banner warn">{t("pf_mismatch")}</div>}
         {note === "expired" && <div className="banner warn">{t("pf_expired")}</div>}
         {field("name", t("name"), { required: true, minLength: 2, maxLength: 120 })}

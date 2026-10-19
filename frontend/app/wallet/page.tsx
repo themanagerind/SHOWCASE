@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, isLoggedIn, rupees } from "@/lib/api";
+import LoadError from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
 import { intlLocale, type MessageKey } from "@/lib/messages";
 
@@ -17,8 +18,9 @@ export default function WalletPage() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [failed, setFailed] = useState(false);
 
-  const load = useCallback(() => api<Wallet>("/wallet/me").then(setW), []);
+  const load = useCallback(() => api<Wallet>("/wallet/me").then((x) => { setW(x); setFailed(false); }, () => setFailed(true)), []);
   useEffect(() => {
     if (!isLoggedIn()) { router.replace("/login?next=/wallet"); return; }
     load();
@@ -30,6 +32,7 @@ export default function WalletPage() {
     setMsg(null);
     try {
       const r = await api<Redeem>("/wallet/me/redeem", { method: "POST", body: JSON.stringify({ code }) });
+      setW((prev) => prev && { ...prev, balance_paise: r.balance_paise }); // new balance at once, history follows
       if (r.status === "CREDITED") { setMsg({ ok: true, text: t("w_credited").replace("{amount}", rupees(r.amount_paise!)) }); setCode(""); }
       else if (r.status === "PENDING") setMsg({ ok: true, text: t("w_pending") });
       else if (r.error_code === "code_already_used") setMsg({ ok: false, text: t("w_used") });
@@ -44,6 +47,7 @@ export default function WalletPage() {
     }
   }
 
+  if (!w && failed) return <LoadError onRetry={() => { setFailed(false); load(); }} />;
   if (!w) return <main><div className="card">{t("loading")}</div></main>;
   return (
     <main className="stack">

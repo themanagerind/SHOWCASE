@@ -54,7 +54,7 @@ def _retailer_wallet(db: Session, retailer_id):
 
 # ---- bookings -----------------------------------------------------------------------------------
 
-def reserve(db: Session, customer: Customer, product_id: uuid.UUID) -> Booking:
+def reserve(db: Session, customer: Customer, product_id: uuid.UUID, expected_discount_paise: int | None = None) -> Booking:
     now = clock.now()
     product = db.scalar(select(Product).where(Product.id == product_id).with_for_update())
     if product is None or not product.is_active or product.deleted_at is not None:
@@ -69,6 +69,9 @@ def reserve(db: Session, customer: Customer, product_id: uuid.UUID) -> Booking:
     if product.stock_qty < 1:
         raise DomainError("This product is out of stock", code="out_of_stock")
     discount = product.wallet_discount_paise
+    if expected_discount_paise is not None and expected_discount_paise != discount:
+        # The page showed an older discount (cache): never take more (or other) points than the customer agreed to.
+        raise Conflict("The discount for this product has changed. Please check and try again.", code="discount_changed")
     wallet = _customer_wallet(db, customer.id)
     if wallet.balance_paise < discount:
         raise DomainError("Not enough points in your wallet", code="insufficient_points")

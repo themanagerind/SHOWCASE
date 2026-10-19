@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import RetailerNav from "@/components/RetailerNav";
 import Stars from "@/components/Stars";
 import { api } from "@/lib/api";
+import { PageLoading } from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
 import { fmtDate, useMyShop } from "@/lib/retailer";
 
@@ -12,19 +13,23 @@ type R = { id: string; rating: number; comment: string | null; author: string; c
 /** Retailer: all reviews of the shop; flag an abusive one for the Showcase team (SPEC 4.7). */
 export default function RetailerReviews() {
   const { t, lang } = useI18n();
-  const { shop } = useMyShop();
+  const { shop, failed: shopFailed } = useMyShop();
+  const [failed, setFailed] = useState(false);
   const [items, setItems] = useState<R[] | null>(null);
-  const load = useCallback(() => api<R[]>("/retailers/me/reviews").then(setItems), []);
+  const [busy, setBusy] = useState<string | null>(null);
+  const load = useCallback(() => api<R[]>("/retailers/me/reviews").then(setItems, () => setFailed(true)), []);
   useEffect(() => { if (shop) load(); }, [shop, load]);
 
   async function flag(r: R) {
     const reason = prompt(t("rv_flagPrompt"));
     if (!reason || reason.trim().length < 3) return;
-    await api(`/retailers/me/reviews/${r.id}/flag`, { method: "POST", body: JSON.stringify({ reason: reason.trim() }) }).catch(() => {});
+    setBusy(r.id);
+    await api(`/retailers/me/reviews/${r.id}/flag`, { method: "POST", body: JSON.stringify({ reason: reason.trim() }) }).catch(() => alert(t("genericError")));
     await load();
+    setBusy(null);
   }
 
-  if (!shop || !items) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
+  if (!shop || !items) return <PageLoading failed={failed || shopFailed} nav />;
   const avg = items.filter((r) => !r.is_hidden);
   return (
     <main className="stack">
@@ -43,7 +48,7 @@ export default function RetailerReviews() {
           {r.is_hidden ? <span className="status DECLINED">{t("rv_hidden")}</span>
             : r.resolved ? <span className="status CONFIRMED">{t("rv_kept")}</span>
             : r.is_flagged ? <span className="status PENDING">{t("rv_flagged")}</span>
-            : <button className="btn secondary small" onClick={() => flag(r)}>{t("rv_flag")}</button>}
+            : <button className="btn secondary small" onClick={() => flag(r)} disabled={busy === r.id}>{t("rv_flag")}</button>}
         </div>
       ))}
     </main>

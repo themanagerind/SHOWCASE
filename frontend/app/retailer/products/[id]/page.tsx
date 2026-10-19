@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import ProductForm from "@/components/ProductForm";
 import RetailerNav from "@/components/RetailerNav";
 import { api } from "@/lib/api";
+import { PageLoading } from "@/components/LoadError";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { errorKey, type OwnProduct, type ProductInput, useMyShop } from "@/lib/retailer";
 
@@ -12,16 +14,22 @@ export default function EditProduct() {
   const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { shop } = useMyShop();
+  const { shop, failed: shopFailed } = useMyShop();
+  const [failed, setFailed] = useState(false);
+  const [missing, setMissing] = useState(false);
   const [product, setProduct] = useState<OwnProduct | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     if (!shop) return;
-    api<OwnProduct[]>("/retailers/me/products").then((all) => setProduct(all.find((p) => p.id === id) ?? null));
+    api<OwnProduct[]>("/retailers/me/products").then((all) => {
+      const p = all.find((x) => x.id === id);
+      if (p) setProduct(p); else setMissing(true); // unknown id: say so instead of loading forever (deep audit B5)
+    }, () => setFailed(true));
   }, [shop, id]);
 
-  if (!shop || !product) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
+  if (missing) return <main className="stack"><RetailerNav /><div className="card">{t("notFound")}</div><Link className="btn secondary" href="/retailer/products">{t("products")}</Link></main>;
+  if (!shop || !product) return <PageLoading failed={failed || shopFailed} nav />;
   const locked = !!shop.products_locked_until;
 
   async function save(p: ProductInput) {

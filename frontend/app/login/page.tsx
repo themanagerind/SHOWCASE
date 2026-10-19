@@ -2,13 +2,15 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { api, ApiError, saveTokens } from "@/lib/api";
+import { api, type Profile, saveTokens } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { type Lang, messages } from "@/lib/messages";
 import { readPrefill } from "@/lib/prefill";
+import { errorKey } from "@/lib/errors";
 import { safeNext } from "@/lib/safe-next";
 
 function Login() {
-  const { t } = useI18n();
+  const { t, setLang } = useI18n();
   const router = useRouter();
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
@@ -31,7 +33,7 @@ function Login() {
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : t("genericError"));
+      setError(t(errorKey(e)));
     } finally {
       setBusy(false);
     }
@@ -50,6 +52,9 @@ function Login() {
         body: JSON.stringify({ phone: sentTo, code }),
       });
       saveTokens(r.access_token, r.refresh_token);
+      // Use the language saved in the profile on this device too (deep audit B7).
+      const p = await api<Profile>("/customers/me").catch(() => null);
+      if (p?.profile_complete && p.preferred_language in messages) setLang(p.preferred_language as Lang);
       router.replace(next);
     });
 

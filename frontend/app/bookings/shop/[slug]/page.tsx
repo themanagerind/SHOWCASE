@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, isLoggedIn, rupees } from "@/lib/api";
+import { api, ApiError, isLoggedIn, rupees } from "@/lib/api";
 import { type Booking, timeLeft } from "@/lib/bookings";
+import { PageLoading } from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
 
 type LimitedShop = {
@@ -20,16 +21,17 @@ export default function LimitedShopPage() {
   const { slug } = useParams<{ slug: string }>();
   const [shop, setShop] = useState<LimitedShop | null>(null);
   const [gone, setGone] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [now] = useState(() => Date.now());
 
   useEffect(() => {
     if (!isLoggedIn()) { router.replace(`/login?next=/bookings/shop/${slug}`); return; }
     api<LimitedShop>(`/bookings/shops/${encodeURIComponent(slug)}`).then(setShop)
-      .catch(() => setGone(true)); // 404 once the booking is closed
+      .catch((e) => (e instanceof ApiError && e.status === 404 ? setGone(true) : setFailed(true))); // 404 once the booking is closed
   }, [router, slug]);
 
   if (gone) return <main className="stack"><div className="card">{t("shopNotFound")}</div><Link className="btn secondary" href="/bookings">{t("b_title")}</Link></main>;
-  if (!shop) return <main><div className="card">{t("loading")}</div></main>;
+  if (!shop) return <PageLoading failed={failed} />;
   const map = shop.lat !== null && shop.lng !== null ? `https://www.google.com/maps/search/?api=1&query=${shop.lat},${shop.lng}` : null;
 
   return (
@@ -64,7 +66,7 @@ export default function LimitedShopPage() {
           <div className="pname">{b.product_name}</div>
           <div className="booking-no">{b.booking_no}</div>
           <div className="note">
-            {t("b_points")}: <b>{rupees(b.discount_paise)}</b> · {t("b_timeLeft")}: <span className="countdown">{timeLeft(b.expires_at, now)}</span>
+            {t("b_points")}: <b>{rupees(b.discount_paise)}</b> · {t("b_timeLeft")}: <span className="countdown">{timeLeft(b.expires_at, now, t("u_hm"))}</span>
           </div>
         </div>
       ))}

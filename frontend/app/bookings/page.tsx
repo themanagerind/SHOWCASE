@@ -6,6 +6,8 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { api, isLoggedIn, rupees } from "@/lib/api";
 import { type Booking, bookingErrorKey, type DiscountRequest, fill, timeLeft } from "@/lib/bookings";
 import RatePurchases from "@/components/RatePurchases";
+import { PageLoading } from "@/components/LoadError";
+import { usePoll } from "@/lib/poll";
 import { useI18n } from "@/lib/i18n";
 import type { MessageKey } from "@/lib/messages";
 import { fmtDate } from "@/lib/retailer";
@@ -19,6 +21,7 @@ function BookingsInner() {
   const [now, setNow] = useState(() => Date.now());
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     const [b, r] = await Promise.all([api<Booking[]>("/bookings/me"), api<DiscountRequest[]>("/shop-discounts/me")]);
@@ -29,11 +32,11 @@ function BookingsInner() {
   useEffect(() => {
     if (!isLoggedIn()) { router.replace("/login?next=/bookings"); return; }
     if (isNew) { setMsg({ ok: true, text: t("b_reservedOk") }); router.replace("/bookings"); } // show once, not on reload
-    load();
+    load().catch(() => setFailed(true));
     const tick = setInterval(() => setNow(Date.now()), 30_000);
-    const poll = setInterval(load, 60_000); // discount requests arrive while the customer is at the counter
-    return () => { clearInterval(tick); clearInterval(poll); };
+    return () => clearInterval(tick);
   }, [router, load]); // eslint-disable-line react-hooks/exhaustive-deps
+  usePoll(load, 60_000); // discount requests arrive while the customer is at the counter
 
   async function act(id: string, path: string, okText: string) {
     setBusy(id);
@@ -45,11 +48,11 @@ function BookingsInner() {
       setMsg({ ok: false, text: t(bookingErrorKey(e)) });
     } finally {
       setBusy(null);
-      await load();
+      await load().catch(() => {});
     }
   }
 
-  if (!bookings) return <main><div className="card">{t("loading")}</div></main>;
+  if (!bookings) return <PageLoading failed={failed} onRetry={() => { setFailed(false); load().catch(() => setFailed(true)); }} />;
   const open = bookings.filter((b) => b.status === "RESERVED" && new Date(b.expires_at).getTime() > now);
   const past = bookings.filter((b) => !open.includes(b));
 
@@ -65,7 +68,7 @@ function BookingsInner() {
           {requests.map((r) => (
             <div className="card stack" key={r.id}>
               <div>{fill(t("d_requestText"), { shop: r.shop_name ?? "", amount: rupees(r.amount_paise), note: r.note })}</div>
-              <div className="note">{t("b_timeLeft")}: <span className="countdown">{timeLeft(r.expires_at, now)}</span></div>
+              <div className="note">{t("b_timeLeft")}: <span className="countdown">{timeLeft(r.expires_at, now, t("u_hm"))}</span></div>
               <div className="row">
                 <button className="btn" disabled={busy === r.id}
                   onClick={() => confirm(fill(t("d_confirmAccept"), { amount: rupees(r.amount_paise), shop: r.shop_name ?? "" }))
@@ -95,7 +98,7 @@ function BookingsInner() {
             <div className="booking-no">{b.booking_no}</div>
           </div>
           <div className="note">
-            {t("b_points")}: <b>{rupees(b.discount_paise)}</b> · {t("b_timeLeft")}: <span className="countdown">{timeLeft(b.expires_at, now)}</span>
+            {t("b_points")}: <b>{rupees(b.discount_paise)}</b> · {t("b_timeLeft")}: <span className="countdown">{timeLeft(b.expires_at, now, t("u_hm"))}</span>
           </div>
           <button className="btn" disabled={busy === b.id}
             onClick={() => confirm(fill(t("b_confirmBought"), { points: rupees(b.discount_paise) }))

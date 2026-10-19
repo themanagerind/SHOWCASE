@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import PlanLocked from "@/components/PlanLocked";
 import RetailerNav from "@/components/RetailerNav";
 import { api, API_URL } from "@/lib/api";
+import { PageLoading } from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
 import { useMyShop } from "@/lib/retailer";
 
@@ -11,24 +12,26 @@ type Share = { link: string; qr_link: string; whatsapp_share_url: string };
 
 export default function SharePage() {
   const { t } = useI18n();
-  const { shop } = useMyShop();
+  const { shop, failed: shopFailed } = useMyShop();
+  const [failed, setFailed] = useState(false);
   const [share, setShare] = useState<Share | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!shop?.plan_code) return;
-    api<Share>("/retailers/me/share").then(setShare);
+    api<Share>("/retailers/me/share").then(setShare, () => setFailed(true));
     // The QR endpoint needs the auth header, so fetch it as a blob instead of a plain <img src>.
     let url: string | null = null;
     fetch(`${API_URL}/retailers/me/qr`, { headers: { Authorization: `Bearer ${localStorage.getItem("showcase.access")}` } })
       .then((r) => (r.ok ? r.blob() : null))
-      .then((b) => { if (b) { url = URL.createObjectURL(b); setQrUrl(url); } });
+      .then((b) => { if (b) { url = URL.createObjectURL(b); setQrUrl(url); } })
+      .catch(() => {});
     return () => { if (url) URL.revokeObjectURL(url); };
   }, [shop]);
 
   if (shop && !shop.plan_code) return <PlanLocked />;
-  if (!shop || !share) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
+  if (!shop || !share) return <PageLoading failed={failed || shopFailed} nav />;
 
   return (
     <main className="stack">
@@ -47,7 +50,7 @@ export default function SharePage() {
         </div>
       </div>
       <div className="card stack" style={{ textAlign: "center" }}>
-        {qrUrl ? <img className="qr" src={qrUrl} alt="QR" /> : <div className="qr" />}
+        {qrUrl ? <img className="qr" src={qrUrl} alt={t("r_qrAlt")} /> : <div className="qr" />}
         <div className="muted">{t("r_qrHelp")}</div>
         {qrUrl && <a className="btn" href={qrUrl} download={`${shop.slug}-qr.png`}>{t("r_downloadQr")}</a>}
       </div>

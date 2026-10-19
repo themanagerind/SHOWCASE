@@ -19,6 +19,8 @@ router = APIRouter(tags=["bookings"])
 
 class BookingIn(BaseModel):
     product_id: uuid.UUID
+    # The points the customer saw and agreed to. If the shop changed it since, nothing is deducted (409).
+    expected_discount_paise: int | None = Field(default=None, gt=0)
 
 
 class BookingOut(BaseModel):
@@ -99,7 +101,7 @@ def _discount_out(db: Session, r: ShopDiscountRequest, for_retailer: bool) -> Di
 @router.post("/bookings", response_model=BookingOut, status_code=201)
 def reserve(body: BookingIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     customer = customer_service.get_customer(db, user)
-    return _booking_out(db, booking_service.reserve(db, customer, body.product_id), False)
+    return _booking_out(db, booking_service.reserve(db, customer, body.product_id, body.expected_discount_paise), False)
 
 
 @router.get("/bookings/me", response_model=list[BookingOut])

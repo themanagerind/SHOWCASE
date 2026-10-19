@@ -60,21 +60,40 @@ export async function logout(): Promise<void> {
   }
 }
 
-async function refreshTokens(): Promise<boolean> {
-  const refresh = read(REFRESH);
-  if (!refresh) return false;
-  const r = await fetch(`${API_URL}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refresh }),
-  });
-  if (!r.ok) {
-    sessionGone();
-    return false;
-  }
-  const data = await r.json();
-  saveTokens(data.access_token, data.refresh_token);
-  return true;
+let refreshing: Promise<boolean> | null = null;
+
+/**
+ * One refresh at a time (deep audit): the header and the page used to send two refreshes with the same token;
+ * the server reads the second as a stolen token and logs the user out. All callers in this tab share one
+ * request, and a Web Lock makes other tabs wait too — if another tab already rotated the token, we just use it.
+ */
+function refreshTokens(): Promise<boolean> {
+  if (!refreshing) refreshing = refreshOnce().finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+async function refreshOnce(): Promise<boolean> {
+  const before = read(REFRESH);
+  if (!before) return false;
+  const run = async (): Promise<boolean> => {
+    const current = read(REFRESH);
+    if (!current) return false;
+    if (current !== before) return true; // another tab refreshed while we waited for the lock
+    const r = await fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: current }),
+    });
+    if (!r.ok) {
+      sessionGone();
+      return false;
+    }
+    const data = await r.json();
+    saveTokens(data.access_token, data.refresh_token);
+    return true;
+  };
+  const locks = typeof navigator !== "undefined" ? (navigator as Navigator & { locks?: LockManager }).locks : undefined;
+  return locks ? locks.request("showcase-refresh", run) : run();
 }
 
 export async function api<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
@@ -165,8 +184,9 @@ export type ProductSearch = { radius_km: number; used_location: boolean; items: 
 
 export type Discovery = { radius_km: number; used_location: boolean; items: DiscoveredShop[] };
 
-export const distanceLabel = (m: number) =>
-  m < 50 ? "< 50 m" : m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
+/** units: the translated "m" and "km" (t("u_m"), t("km")). */
+export const distanceLabel = (m: number, units = { m: "m", km: "km" }) =>
+  m < 50 ? `< 50 ${units.m}` : m < 1000 ? `${Math.round(m / 10) * 10} ${units.m}` : `${(m / 1000).toFixed(1)} ${units.km}`;
 
 export type Favourite = {
   slug: string;

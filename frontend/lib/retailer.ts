@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, isLoggedIn } from "./api";
+import { errorKey as commonErrorKey } from "./errors";
 import { intlLocale, type Lang, type MessageKey } from "./messages";
 
 export type MyShop = {
@@ -53,25 +54,28 @@ export type ProductInput = {
 export function useMyShop() {
   const router = useRouter();
   const [shop, setShop] = useState<MyShop | null>(null);
+  const [failed, setFailed] = useState(false);
 
   const reload = useCallback(async () => {
     try {
       setShop(await api<MyShop>("/retailers/me"));
+      setFailed(false);
     } catch (e) {
       if (e instanceof ApiError && e.code === "no_shop") router.replace("/retailer/setup");
-      else if (e instanceof ApiError && e.status === 401) router.replace("/login?next=/retailer");
+      else if (e instanceof ApiError && e.status === 401) router.replace(`/login?next=${encodeURIComponent(location.pathname)}`);
+      else setFailed(true);
     }
   }, [router]);
 
   useEffect(() => {
     if (!isLoggedIn()) {
-      router.replace("/login?next=/retailer");
+      router.replace(`/login?next=${encodeURIComponent(location.pathname)}`); // back to this page (deep audit B6)
       return;
     }
     reload();
   }, [reload, router]);
 
-  return { shop, reload };
+  return { shop, reload, failed };
 }
 
 /** "2,899.50" / "2899.5" → 289950 paise. Returns NaN for invalid input. */
@@ -97,7 +101,7 @@ export function errorKey(e: unknown): MessageKey {
       weekly_lock: "r_errLock",
       subscription_required: "r_errPlan",
       invalid_discount: "r_errDiscount",
-    } as Record<string, MessageKey>)[e.code] ?? "genericError"
+    } as Record<string, MessageKey>)[e.code] ?? commonErrorKey(e)
   );
 }
 

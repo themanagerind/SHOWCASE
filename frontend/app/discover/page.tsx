@@ -36,10 +36,17 @@ export default function DiscoverPage() {
   const [tab, setTab] = useState<"shops" | "products">("shops");
   const [term, setTerm] = useState("");
   const [products, setProducts] = useState<FoundProduct[] | null>(null);
+  const [productsFailed, setProductsFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+  const [favBusy, setFavBusy] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoggedIn()) api<Profile>("/customers/me").then((p) => setRadius(p.search_radius_km)).catch(() => {});
-    getPosition().then(setCoords);
+    // An unanswered location prompt never resolves: after 4 s show shops by pincode/city, then switch to the
+    // position if it arrives later (deep audit B3).
+    const fallback = setTimeout(() => setCoords((c) => (c === undefined ? null : c)), 4000);
+    getPosition().then((p) => { clearTimeout(fallback); setCoords((c) => p ?? (c === undefined ? null : c)); });
+    return () => clearTimeout(fallback);
   }, []);
 
   const load = useCallback(async (offset: number) => {
@@ -54,7 +61,7 @@ export default function DiscoverPage() {
       setHasMore(r.items.length === PAGE);
     } catch (e) {
       setItems([]);
-      setError(e instanceof ApiError && e.code === "location_required" ? t("needLocation") : t("genericError"));
+      setError(e instanceof ApiError && e.code === "location_required" ? t("needLocation") : t("loadError"));
     }
   }, [coords, radius, category, t]);
 
@@ -75,17 +82,27 @@ export default function DiscoverPage() {
       if (coords) { qs.set("lat", String(coords.lat)); qs.set("lng", String(coords.lng)); }
       try {
         setProducts((await api<ProductSearch>(`/discovery/products?${qs}`)).items);
+        setProductsFailed(false);
       } catch {
-        setProducts([]);
+        setProducts(null);
+        setProductsFailed(true);
       }
     }, 300);
     return () => clearTimeout(id);
-  }, [tab, term, coords, radius]);
+  }, [tab, term, coords, radius, retryKey]);
 
   async function toggleFavourite(shop: DiscoveredShop) {
     if (!isLoggedIn()) return router.push(`/login?next=${encodeURIComponent("/discover")}`);
-    await api(`/customers/me/favourites/${shop.slug}`, { method: shop.is_favourite ? "DELETE" : "POST" });
-    setItems((prev) => prev?.map((s) => (s.slug === shop.slug ? { ...s, is_favourite: !s.is_favourite } : s)) ?? null);
+    if (favBusy) return;
+    setFavBusy(shop.slug);
+    try {
+      await api(`/customers/me/favourites/${shop.slug}`, { method: shop.is_favourite ? "DELETE" : "POST" });
+      setItems((prev) => prev?.map((s) => (s.slug === shop.slug ? { ...s, is_favourite: !s.is_favourite } : s)) ?? null);
+    } catch {
+      setError(t("genericError"));
+    } finally {
+      setFavBusy(null);
+    }
   }
 
   return (
@@ -111,10 +128,10 @@ export default function DiscoverPage() {
           </div>
         </div>
         {tab === "shops" ? (
-          <input type="text" placeholder={t("categoryPlaceholder")} value={category} onChange={(e) => setCategory(e.target.value)} />
+          <input type="text" aria-label={t("categoryPlaceholder")} placeholder={t("categoryPlaceholder")} value={category} onChange={(e) => setCategory(e.target.value)} />
         ) : (
           <>
-            <input type="search" placeholder={t("searchProducts")} value={term} onChange={(e) => setTerm(e.target.value)} autoFocus />
+            <input type="search" aria-label={t("searchProducts")} placeholder={t("searchProducts")} value={term} onChange={(e) => setTerm(e.target.value)} autoFocus />
             <div className="note">{t("productSearchHint")}</div>
           </>
         )}
@@ -130,7 +147,10 @@ export default function DiscoverPage() {
       </div>
 
       {tab === "products" ? (
-        products === null ? null : products.length === 0 ? (
+        productsFailed ? (
+          <div className="card error stack">{t("loadError")}
+            <button className="btn secondary" onClick={() => setRetryKey((k) => k + 1)}>{t("retry")}</button></div>
+        ) : products === null ? null : products.length === 0 ? (
           <div className="card muted">{t("noProductsFound")}</div>
         ) : (
           products.map((p) => (
@@ -146,7 +166,7 @@ export default function DiscoverPage() {
                 {!p.in_stock && <span className="badge out">{t("outOfStock")}</span>}
                 <div className="muted">
                   {p.shop_name} · <span className="cap">{p.shop_city}</span>
-                  {p.distance_m !== null && <> · <span className="dist">{distanceLabel(p.distance_m)}</span></>}
+                  {p.distance_m !== null && <> · <span className="dist">{distanceLabel(p.distance_m, { m: t("u_m"), km: t("km") })}</span></>}
                 </div>
               </div>
             </Link>
@@ -154,7 +174,10 @@ export default function DiscoverPage() {
         )
       ) : (
         <>
-          {error && <div className="card error">{error}</div>}
+          {error && (
+            <div className="card error stack">{error}
+              <button className="btn secondary" onClick={() => load(0)}>{t("retry")}</button></div>
+          )}
           {items === null ? (
             <div className="card">{t("loading")}</div>
           ) : items.length === 0 && !error ? (
@@ -169,9 +192,9 @@ export default function DiscoverPage() {
                     {s.category} · <span className="cap">{s.city}</span>
                     {s.rating_count > 0 && ` · ★ ${s.rating_avg.toFixed(1)}`}
                   </div>
-                  {s.distance_m !== null && <div className="dist">{distanceLabel(s.distance_m)} {t("away")}</div>}
+                  {s.distance_m !== null && <div className="dist">{distanceLabel(s.distance_m, { m: t("u_m"), km: t("km") })} {t("away")}</div>}
                 </div>
-                <button className={`heart ${s.is_favourite ? "on" : ""}`} onClick={() => toggleFavourite(s)}
+                <button className={`heart ${s.is_favourite ? "on" : ""}`} onClick={() => toggleFavourite(s)} disabled={favBusy === s.slug}
                   aria-label={s.is_favourite ? t("inFavourites") : t("addFavourite")}>
                   {s.is_favourite ? "♥" : "♡"}
                 </button>

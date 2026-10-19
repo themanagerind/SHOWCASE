@@ -95,3 +95,16 @@ def test_discount_requests_cannot_be_used_to_fish_names_or_spam(client, login, d
     codes = [client.post("/api/v1/retailers/me/shop-discounts", json={**body, "phone": f"91000{i:05d}"},
                          headers=auth(shop_t)).status_code for i in range(30)]
     assert codes[-1] == 429
+
+
+def test_booking_refuses_a_discount_the_customer_did_not_see(client, login, db, frozen):
+    """Deep audit: the shop page may be cached; the customer agrees to the shown points only."""
+    shop_t, _ = create_shop(client, login, db=db)
+    pid = client.post("/api/v1/retailers/me/products", json=product_data(2), headers=auth(shop_t)).json()["id"]
+    client.patch(f"/api/v1/retailers/me/products/{pid}", json={"wallet_discount_paise": 3000}, headers=auth(shop_t))
+    cust_t = customer_with_points(client, login, db, "9123456780", 5000)
+    r = client.post("/api/v1/bookings", json={"product_id": pid, "expected_discount_paise": 2000}, headers=auth(cust_t))
+    assert r.status_code == 409 and r.json()["error"] == "discount_changed"
+    assert client.get("/api/v1/wallet/me", headers=auth(cust_t)).json()["balance_paise"] == 5000
+    r = client.post("/api/v1/bookings", json={"product_id": pid, "expected_discount_paise": 3000}, headers=auth(cust_t))
+    assert r.status_code == 201

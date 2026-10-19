@@ -18,16 +18,17 @@ export type DiscountRequest = {
 export const fill = (s: string, vars: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
 
-/** Time left until `iso`, as "5h 12m" (never negative). */
-export function timeLeft(iso: string, now: number): string {
+/** Time left until `iso`, e.g. "5h 12m" with fmt = t("u_hm") (never negative). */
+export function timeLeft(iso: string, now: number, fmt = "{h}h {m}m"): string {
   const mins = Math.max(0, Math.floor((new Date(iso).getTime() - now) / 60000));
-  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  return fill(fmt, { h: Math.floor(mins / 60), m: mins % 60 });
 }
 
 export function bookingErrorKey(e: unknown): MessageKey {
   if (!(e instanceof ApiError)) return "genericError";
   return (({
     insufficient_points: "b_errPoints",
+    discount_changed: "b_discountChanged",
     out_of_stock: "outOfStock",
     own_shop: "b_errOwn",
     shop_not_live: "b_errShop",

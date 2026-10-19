@@ -29,5 +29,17 @@ export const LANGS: { code: Lang; label: string }[] = [
   { code: "or", label: "ଓଡ଼ିଆ" },
 ];
 
-/** Locale for dates/numbers, e.g. "gu-IN". */
-export const intlLocale = (lang: Lang) => `${lang}-IN`;
+/**
+ * Locale for dates/numbers, e.g. "gu-IN-u-nu-latn". Digits are always 0-9 so a date and an amount on the same
+ * row use one digit style (deep audit). If the browser has no data for the language (e.g. Odia in Chromium),
+ * fall back to "en-IN" rather than silently getting US English.
+ */
+export function intlLocale(lang: Lang): string {
+  const wanted = `${lang}-IN-u-nu-latn`;
+  try {
+    const got = new Intl.DateTimeFormat(wanted).resolvedOptions().locale;
+    return got.startsWith(lang) ? wanted : "en-IN";
+  } catch {
+    return "en-IN";
+  }
+}

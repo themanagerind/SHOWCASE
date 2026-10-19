@@ -83,6 +83,7 @@ Revenue model: SUBSCRIPTION ONLY. No commission. There is NO free plan.
 - Every product has a mandatory wallet discount (`wallet_discount_paise`, > 0 and ≤ price), set by the retailer together with the price.
 - To reserve a product, the customer must have at least that product's discount in their Showcase wallet (§4.5). No balance → cannot reserve.
 - On reservation, exactly the discount amount is deducted from the customer's wallet immediately.
+- The app sends the discount the customer saw; if the retailer has changed it since, the reservation is refused (`discount_changed`) and the page shows the new price, so a customer is never charged points they did not agree to.
 - Points deducted for a booking are NEVER returned to the customer.
 - **Booking state machine**:
   - `RESERVED → PURCHASED`: customer buys the product at the shop and **the CUSTOMER confirms it by tapping "I bought it" in their app** (owner decision 2026-10-18; no code, and the retailer cannot mark a booking purchased — this prevents retailers claiming points for sales that did not happen). The booking's points become the purchase discount (not deducted again): customer pays price − discount at the shop, and the points are credited to the retailer's wallet.

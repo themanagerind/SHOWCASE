@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import RetailerNav from "@/components/RetailerNav";
 import { api, rupees } from "@/lib/api";
+import { PageLoading } from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
 import { fmtDate, useMyShop } from "@/lib/retailer";
 import { type Checkout, loadRazorpay, type MySubscription, openRazorpay, type PlanOption } from "@/lib/subscription";
 
 export default function PlanPage() {
   const { t, lang } = useI18n();
-  const { shop, reload } = useMyShop();
+  const { shop, reload, failed: shopFailed } = useMyShop();
+  const [failed, setFailed] = useState(false);
   const [sub, setSub] = useState<MySubscription | null>(null);
   const [plans, setPlans] = useState<PlanOption[] | null>(null);
   const [cycle, setCycle] = useState<"MONTHLY" | "YEARLY">("YEARLY");
@@ -23,7 +25,7 @@ export default function PlanPage() {
     // Paid subscribers see their own cycle; everyone else starts on yearly (the better deal).
     if (s.status === "ACTIVE" && s.billing_cycle) setCycle(s.billing_cycle);
   }, []);
-  useEffect(() => { if (shop) load(); }, [shop, load]);
+  useEffect(() => { if (shop) load().catch(() => setFailed(true)); }, [shop, load]);
 
   async function pay(code: string) {
     setMsg(null);
@@ -44,7 +46,7 @@ export default function PlanPage() {
     }
   }
 
-  if (!shop || !sub || !plans) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
+  if (!shop || !sub || !plans) return <PageLoading failed={failed || shopFailed} nav />;
 
   const status = sub.status ?? "none";
   const statusKey = (["TRIAL", "ACTIVE", "GRACE", "EXPIRED"].includes(status) ? `p_${status}` : "p_none") as

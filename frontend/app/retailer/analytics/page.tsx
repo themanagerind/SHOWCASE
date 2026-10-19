@@ -6,6 +6,7 @@ import PlanLocked from "@/components/PlanLocked";
 import RetailerNav from "@/components/RetailerNav";
 import { api } from "@/lib/api";
 import { fill } from "@/lib/bookings";
+import { PageLoading } from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
 import { intlLocale } from "@/lib/messages";
 import { useMyShop } from "@/lib/retailer";
@@ -20,15 +21,16 @@ type Dash = {
 /** Retailer insights (SPEC 4.9). One series per chart, one hue (brand green); values in text tokens. */
 export default function Insights() {
   const { t, lang } = useI18n();
-  const { shop } = useMyShop();
+  const { shop, failed: shopFailed } = useMyShop();
+  const [failed, setFailed] = useState(false);
   const [days, setDays] = useState(30);
   const [d, setD] = useState<Dash | null>(null);
   const [hover, setHover] = useState<number | null>(null);
 
-  useEffect(() => { if (shop?.plan_code) api<Dash>(`/retailers/me/analytics?days=${days}`).then(setD); }, [shop, days]);
+  useEffect(() => { if (shop?.plan_code) api<Dash>(`/retailers/me/analytics?days=${days}`).then(setD, () => setFailed(true)); }, [shop, days]);
 
   if (shop && !shop.plan_code) return <PlanLocked />;
-  if (!shop || !d) return <main><RetailerNav /><div className="card">{t("loading")}</div></main>;
+  if (!shop || !d) return <PageLoading failed={failed || shopFailed} nav />;
 
   if (!d.full) {
     return (

@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { api, ApiError, isLoggedIn, logout, type Profile, RADIUS_OPTIONS } from "@/lib/api";
+import { api, isLoggedIn, logout, type Profile, RADIUS_OPTIONS } from "@/lib/api";
 import DeviceSessions from "@/components/DeviceSessions";
+import { PageLoading } from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
+import { errorKey } from "@/lib/errors";
 import { safeNext } from "@/lib/safe-next";
 import { LANGS, type Lang } from "@/lib/messages";
 
@@ -15,6 +17,7 @@ function ProfileForm() {
   const next = useSearchParams().get("next");
   const [form, setForm] = useState({ name: "", pincode: "", city: "", preferred_language: "en", contact_consent: false, search_radius_km: 5 });
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -31,8 +34,8 @@ function ProfileForm() {
         search_radius_km: p.search_radius_km,
       });
       setLoaded(true);
-    });
-  }, [router, next]);
+    }, () => setFailed(true));
+  }, [router, next]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -45,13 +48,13 @@ function ProfileForm() {
       if (dest) router.replace(dest);
       else setMsg({ ok: true, text: t("saved") });
     } catch (err) {
-      setMsg({ ok: false, text: err instanceof ApiError ? err.message : t("genericError") });
+      setMsg({ ok: false, text: t(errorKey(err)) });
     } finally {
       setBusy(false);
     }
   }
 
-  if (!loaded) return <main><div className="card">{t("loading")}</div></main>;
+  if (!loaded) return <PageLoading failed={failed} />;
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm({ ...form, [k]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value });
 

@@ -3,17 +3,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { api, isLoggedIn, rupees, type Product, type Storefront } from "@/lib/api";
+import { api, ApiError, isLoggedIn, rupees, type Product, type Storefront } from "@/lib/api";
 import { bookingErrorKey, fill } from "@/lib/bookings";
 import ShopReviews from "@/components/ShopReviews";
 import { useI18n } from "@/lib/i18n";
 import { track } from "@/lib/track";
 
-export default function ShopView({ data, slug, source }: { data: Storefront | null; slug: string; source: "LINK" | "QR" }) {
+export default function ShopView({ data: initial, slug, source }: { data: Storefront | null; slug: string; source: "LINK" | "QR" }) {
   const { t, day } = useI18n();
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<{ id: string; text: string } | null>(null);
+  // The server page may be up to a minute old: load fresh prices, discounts and stock right away (deep audit).
+  const [data, setData] = useState(initial);
+  const reload = () => api<Storefront>(`/retailers/${encodeURIComponent(slug)}`).then(setData).catch(() => {});
+  useEffect(() => { if (initial) reload(); }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function reserve(p: Product) {
     if (!isLoggedIn()) { router.push(`/login?next=/${slug}`); return; }
@@ -21,10 +25,13 @@ export default function ShopView({ data, slug, source }: { data: Storefront | nu
     setBusy(p.id);
     setErr(null);
     try {
-      await api("/bookings", { method: "POST", body: JSON.stringify({ product_id: p.id }) });
+      // Send the points the customer just agreed to: if the shop changed them, nothing is deducted (409).
+      await api("/bookings", { method: "POST",
+        body: JSON.stringify({ product_id: p.id, expected_discount_paise: p.wallet_discount_paise }) });
       router.push("/bookings?new=1");
     } catch (e) {
       setErr({ id: p.id, text: t(bookingErrorKey(e)) });
+      if (e instanceof ApiError && (e.code === "discount_changed" || e.code === "out_of_stock")) reload();
     } finally {
       setBusy(null);
     }

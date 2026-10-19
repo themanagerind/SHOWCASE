@@ -21,6 +21,12 @@ export default function Header() {
     else { setIsRetailer(false); setIsAdmin(false); }
   }, [pathname]);
 
+  function changeLang(l: Lang) {
+    setLang(l);
+    // Saved to the profile too, so SMS/next login use it (deep audit B7). Best effort.
+    if (loggedIn) api("/customers/me", { method: "PATCH", body: JSON.stringify({ preferred_language: l }) }).catch(() => {});
+  }
+
   return (
     <header className="header">
       <Link href="/" className="brand">{t("appName")}</Link>
@@ -38,7 +44,7 @@ export default function Header() {
         ) : (
           <Link href="/login">{t("login")}</Link>
         )}
-        <select className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Language">
+        <select className="lang-select" value={lang} onChange={(e) => changeLang(e.target.value as Lang)} aria-label={t("language")}>
           {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
         </select>
       </nav>

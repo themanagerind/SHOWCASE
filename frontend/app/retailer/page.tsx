@@ -5,15 +5,16 @@ import { useEffect, useState } from "react";
 import { api, rupees } from "@/lib/api";
 import RetailerNav from "@/components/RetailerNav";
 import RewardCard from "@/components/RewardCard";
+import { PageLoading } from "@/components/LoadError";
 import { useI18n } from "@/lib/i18n";
 import { fmtDate, useMyShop } from "@/lib/retailer";
 
 export default function RetailerDashboard() {
   const { t, lang } = useI18n();
-  const { shop } = useMyShop();
+  const { shop, failed } = useMyShop();
   const [walletPaise, setWalletPaise] = useState<number | null>(null);
   useEffect(() => { if (shop) api<{ balance_paise: number }>("/retailers/me/wallet").then((w) => setWalletPaise(w.balance_paise)); }, [shop]);
-  if (!shop) return <main><div className="card">{t("loading")}</div></main>;
+  if (!shop) return <PageLoading failed={failed} />;
 
   const live = !!shop.plan_code;
   return (
@@ -29,7 +30,8 @@ export default function RetailerDashboard() {
           {live ? (
             <>
               <span className="plan-pill">{shop.plan_code}</span>
-              <span className="status-pill">{shop.subscription_status}</span>
+              <span className="status-pill">{["TRIAL", "ACTIVE", "GRACE", "EXPIRED"].includes(shop.subscription_status ?? "")
+                ? t(`p_${shop.subscription_status}` as "p_ACTIVE") : shop.subscription_status}</span>
             </>
           ) : (
             <span className="plan-pill" style={{ background: "var(--danger)" }}>{shop.plan_expired ? t("p_EXPIRED") : "—"}</span>
